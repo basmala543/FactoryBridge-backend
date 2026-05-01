@@ -5,6 +5,24 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/users");
 const authMiddleware = require("../middleware/authMiddleware");
 
+const nodemailer = require('nodemailer');
+
+// إعداد "الناقل" الذي سيرسل الإيميلات
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: 'factorybridge6@gmail.com', 
+    pass: 'alec colf cvav owum' 
+  }
+});
+
+
+
+
+
+
+
+
 // ================== SIGNUP ==================
 router.post("/signup", async (req, res) => {
   try {
@@ -139,9 +157,21 @@ router.post("/forgot-password", async (req, res) => {
 
     await user.save();
 
-    res.json({
+    // 1. تحضير الرسالة
+    const mailOptions = {
+      from: 'factorybridge6@gmail.com',
+      to: Email,
+      subject: 'Password Reset OTP',
+      text: `Your OTP for password reset is: ${otp}. It will expire in 10 minutes.`
+    };
+
+    // 2. إرسال الرسالة
+    await transporter.sendMail(mailOptions);
+
+    // 3. الرد على الموبايل
+   res.json({
       message: "OTP sent successfully",
-      otp: otp,
+      otp: otp // رجعي السطر ده مؤقتاً عشان الفلوتر يعرف يقارن
     });
   } catch (err) {
     res.status(500).json({
@@ -208,5 +238,81 @@ router.post("/reset-password", async (req, res) => {
     });
   }
 });
+
+
+
+
+// ================== CHANGE PASSWORD ==================
+router.put("/change-password", authMiddleware, async (req, res) => {
+  try {
+    const { oldPassword, newPassword } = req.body;
+
+    // البحث عن المستخدم
+    const user = await User.findById(req.user.userId);
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found"
+      });
+    }
+
+    // التحقق من الباسورد القديمة
+    const isMatch = await bcrypt.compare(
+      oldPassword,
+      user.Password
+    );
+
+    if (!isMatch) {
+      return res.status(400).json({
+        message: "Old password is incorrect"
+      });
+    }
+
+    // تشفير الباسورد الجديدة
+    const hashedPassword = await bcrypt.hash(
+      newPassword,
+      10
+    );
+
+    user.Password = hashedPassword;
+    await user.save();
+
+    res.json({
+      message: "Password changed successfully"
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      message: err.message
+    });
+  }
+});
+
+// ================== DELETE ACCOUNT ==================
+router.delete("/delete-account", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+
+    
+    await BrandProfile.findOneAndDelete({ userId });
+    await FactoryProfile.findOneAndDelete({ userId });
+
+    
+    await User.findByIdAndDelete(userId);
+
+    res.json({
+      message: "Account deleted successfully"
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      message: err.message
+    });
+  }
+});
+
+
+
+
 
 module.exports = router;
