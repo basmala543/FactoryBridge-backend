@@ -138,48 +138,35 @@ router.post("/forgot-password", async (req, res) => {
   try {
     const { Email } = req.body;
 
-    const user = await User.findOne({
-      email: Email,
-    });
+    const user = await User.findOne({ email: Email });
 
     if (!user) {
-      return res.status(400).json({
-        message: "User not found",
-      });
+      return res.status(400).json({ message: "User not found" });
     }
 
-    // توليد OTP من 6 أرقام
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
-    // صلاحية 10 دقائق
     user.otp = otp;
     user.otpExpires = new Date(Date.now() + 10 * 60 * 1000);
-
     await user.save();
 
-    // 1. تحضير الرسالة
-    const mailOptions = {
+    // ✅ رد على الـ Flutter فوراً قبل ما تنتظري الإيميل
+    res.json({
+      message: "OTP sent successfully",
+      otp: otp
+    });
+
+    // ✅ ابعتي الإيميل في الخلفية بدون await
+    transporter.sendMail({
       from: 'factorybridge6@gmail.com',
       to: Email,
       subject: 'Password Reset OTP',
-      text: `Your OTP for password reset is: ${otp}. It will expire in 10 minutes.`
-    };
+      text: `Your OTP is: ${otp}. It will expire in 10 minutes.`
+    }).catch(err => console.log('Mail error:', err));
 
-    // 2. إرسال الرسالة
-    await transporter.sendMail(mailOptions);
-
-    // 3. الرد على الموبايل
-   res.json({
-      message: "OTP sent successfully",
-      otp: otp // رجعي السطر ده مؤقتاً عشان الفلوتر يعرف يقارن
-    });
   } catch (err) {
-    res.status(500).json({
-      message: err.message,
-    });
+    res.status(500).json({ message: err.message });
   }
 });
-
 
 // ================== VERIFY OTP + RESET PASSWORD ==================
 router.post("/reset-password", async (req, res) => {
