@@ -4,20 +4,9 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const User = require("../models/users");
 const authMiddleware = require("../middleware/authMiddleware");
-const nodemailer = require("nodemailer");
+const { Resend } = require('resend');
 
-// ================== NODEMAILER ==================
-const nodemailer = require("nodemailer");
-
-const transporter = nodemailer.createTransport({
-  host: "smtp-relay.brevo.com",
-  port: 587,
-  secure: false,
-  auth: {
-    user: "aa5079001@smtp-brevo.com",
-    pass: "I3V7WTbMx6BLRrqh"
-  }
-});
+const resend = new Resend('re_MQGCKLU8_3qURZKnERF3pssMPfQMUeqRA');
 
 // ================== SIGNUP ==================
 router.post("/signup", async (req, res) => {
@@ -79,131 +68,82 @@ router.post("/login", async (req, res) => {
       { expiresIn: "1h" }
     );
 
-    res.json({
-      message: "Login success",
-      token: token,
-      role: user.role
-    });
+    res.json({ message: "Login success", token: token, role: user.role });
 
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
-// ================== PROFILE ==================
 router.get("/profile", authMiddleware, (req, res) => {
-  res.json({
-    message: "User authenticated",
-    user: req.user
-  });
+  res.json({ message: "User authenticated", user: req.user });
 });
 
-// ================== FORGOT PASSWORD ==================
+// ================== FORGOT PASSWORD + SEND OTP ==================
 router.post("/forgot-password", async (req, res) => {
   try {
     const { Email } = req.body;
 
-    console.log("Forgot password request for:", Email);
-
-    // check user exists
     const user = await User.findOne({ email: Email });
 
     if (!user) {
-      return res.status(400).json({
-        message: "User not found"
-      });
+      return res.status(400).json({ message: "User not found" });
     }
 
-    // generate OTP
-    const otp = Math.floor(
-      100000 + Math.random() * 900000
-    ).toString();
-
-    // save OTP in DB
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
     user.otp = otp;
-    user.otpExpires = new Date(
-      Date.now() + 10 * 60 * 1000
-    );
-
+    user.otpExpires = new Date(Date.now() + 10 * 60 * 1000);
     await user.save();
 
-    // send email
-    const info = await transporter.sendMail({
-      from: "factorybridge7@gmail.com",
+    // رد على الـ Flutter فوراً
+    res.json({ message: "OTP sent successfully", otp: otp });
+
+    // ابعت الإيميل في الخلفية
+    resend.emails.send({
+      from: 'onboarding@resend.dev',
       to: Email,
-      subject: "Password Reset OTP",
+      subject: 'Password Reset OTP',
       text: `Your OTP is: ${otp}. It will expire in 10 minutes.`
-    });
-
-    console.log("Email sent successfully:", info);
-
-    res.json({
-      message: "OTP sent successfully"
-    });
+    }).catch(err => console.log('Mail error:', err));
 
   } catch (err) {
-    console.log("Forgot password error:", err);
-
-    res.status(500).json({
-      message: err.message
-    });
+    res.status(500).json({ message: err.message });
   }
 });
-// ================== RESET PASSWORD ==================
+
+// ================== VERIFY OTP + RESET PASSWORD ==================
 router.post("/reset-password", async (req, res) => {
   try {
-    const {
-      Email,
-      OTP,
-      NewPassword,
-      ConfirmPassword
-    } = req.body;
+    const { Email, OTP, NewPassword, ConfirmPassword } = req.body;
 
     if (NewPassword !== ConfirmPassword) {
-      return res.status(400).json({
-        message: "Passwords do not match"
-      });
+      return res.status(400).json({ message: "Passwords do not match" });
     }
 
     const user = await User.findOne({ email: Email });
 
     if (!user) {
-      return res.status(400).json({
-        message: "User not found"
-      });
+      return res.status(400).json({ message: "User not found" });
     }
 
     if (user.otp !== OTP) {
-      return res.status(400).json({
-        message: "Invalid OTP"
-      });
+      return res.status(400).json({ message: "Invalid OTP" });
     }
 
     if (user.otpExpires < new Date()) {
-      return res.status(400).json({
-        message: "OTP expired"
-      });
+      return res.status(400).json({ message: "OTP expired" });
     }
 
-    const hashedPassword = await bcrypt.hash(
-      NewPassword,
-      10
-    );
-
+    const hashedPassword = await bcrypt.hash(NewPassword, 10);
     user.password = hashedPassword;
     user.otp = null;
     user.otpExpires = null;
-
     await user.save();
 
-    res.json({
-      message: "Password reset successfully"
-    });
+    res.json({ message: "Password reset successfully" });
 
   } catch (err) {
-    res.status(500).json({
-      message: err.message
-    });
+    res.status(500).json({ message: err.message });
   }
 });
 
@@ -215,38 +155,23 @@ router.put("/change-password", authMiddleware, async (req, res) => {
     const user = await User.findById(req.user.userId);
 
     if (!user) {
-      return res.status(404).json({
-        message: "User not found"
-      });
+      return res.status(404).json({ message: "User not found" });
     }
 
-    const isMatch = await bcrypt.compare(
-      oldPassword,
-      user.password
-    );
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
 
     if (!isMatch) {
-      return res.status(400).json({
-        message: "Old password is incorrect"
-      });
+      return res.status(400).json({ message: "Old password is incorrect" });
     }
 
-    const hashedPassword = await bcrypt.hash(
-      newPassword,
-      10
-    );
-
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
     user.password = hashedPassword;
     await user.save();
 
-    res.json({
-      message: "Password changed successfully"
-    });
+    res.json({ message: "Password changed successfully" });
 
   } catch (err) {
-    res.status(500).json({
-      message: err.message
-    });
+    res.status(500).json({ message: err.message });
   }
 });
 
@@ -257,14 +182,10 @@ router.delete("/delete-account", authMiddleware, async (req, res) => {
 
     await User.findByIdAndDelete(userId);
 
-    res.json({
-      message: "Account deleted successfully"
-    });
+    res.json({ message: "Account deleted successfully" });
 
   } catch (err) {
-    res.status(500).json({
-      message: err.message
-    });
+    res.status(500).json({ message: err.message });
   }
 });
 
