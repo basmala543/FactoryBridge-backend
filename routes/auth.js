@@ -99,12 +99,17 @@ router.post("/forgot-password", async (req, res) => {
     res.json({ message: "OTP sent successfully", otp: otp });
 
     // ابعت الإيميل في الخلفية
-   resend.emails.send({
-  from: 'onboarding@resend.dev',
-  to: Email,
-  subject: 'FactoryBridge - Password Reset OTP',
-  text: `FactoryBridge App\n\nYour OTP is: ${otp}\nIt will expire in 10 minutes.\n\nIf you did not request this, please ignore this email.`
-}).catch(err => console.log('Mail error:', err));
+    resend.emails.send({
+      from: 'onboarding@resend.dev',
+      to: Email,
+      subject: 'Password Reset OTP',
+      text: `Your OTP is: ${otp}. It will expire in 10 minutes.`
+    }).catch(err => console.log('Mail error:', err));
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 
 // ================== VERIFY OTP + RESET PASSWORD ==================
 router.post("/reset-password", async (req, res) => {
