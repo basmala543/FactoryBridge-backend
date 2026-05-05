@@ -100,7 +100,7 @@ router.post("/forgot-password", async (req, res) => {
 
     // ابعت الإيميل في الخلفية
     resend.emails.send({
-      from: 'onboarding@resend.dev',
+    from: 'noreply@yourdomain.com',
       to: Email,
       subject: 'Password Reset OTP',
       text: `Your OTP is: ${otp}. It will expire in 10 minutes.`
