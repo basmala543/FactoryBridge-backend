@@ -11,11 +11,10 @@ const nodemailer = require('nodemailer');
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: 'factorybridge6@gmail.com', 
-    pass: 'alec colf cvav owum' 
+    user: 'factorybridge6@gmail.com',
+    pass: 'alec colf cvav owum'
   }
 });
-
 
 
 
