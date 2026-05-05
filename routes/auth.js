@@ -7,16 +7,15 @@ const authMiddleware = require("../middleware/authMiddleware");
 
 const nodemailer = require('nodemailer');
 
-// إعداد "الناقل" الذي سيرسل الإيميلات
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false,
   auth: {
     user: 'factorybridge7@gmail.com',
     pass: 'lnfa sluf qogz wjbw'
   }
 });
-
-
 
 
 
