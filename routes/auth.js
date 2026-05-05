@@ -155,7 +155,7 @@ router.post("/forgot-password", async (req, res) => {
 
     // ✅ ابعتي الإيميل في الخلفية بدون await
     transporter.sendMail({
-      from: 'factorybridge6@gmail.com',
+      from: 'factorybridge7@gmail.com',
       to: Email,
       subject: 'Password Reset OTP',
       text: `Your OTP is: ${otp}. It will expire in 10 minutes.`
