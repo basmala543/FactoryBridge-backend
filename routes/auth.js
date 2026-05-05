@@ -4,9 +4,29 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const User = require("../models/users");
 const authMiddleware = require("../middleware/authMiddleware");
-const { Resend } = require('resend');
+const nodemailer = require("nodemailer");
+const transporter = nodemailer.createTransport({
+  host: "smtp-relay.brevo.com",
+  port: 587,
+  secure: false,
+  auth: {
+    user: "aa5079001@smtp-brevo.com",
+    pass: "..."
+  }
+});
 
-const resend = new Resend('re_MQGCKLU8_3qURZKnERF3pssMPfQMUeqRA');
+transporter.verify((error, success) => {
+  if (error) {
+    console.log("SMTP Error:", error);
+  } else {
+    console.log("SMTP Server is ready");
+  }
+});
+
+
+
+
+
 
 // ================== SIGNUP ==================
 router.post("/signup", async (req, res) => {
@@ -87,30 +107,46 @@ router.post("/forgot-password", async (req, res) => {
     const user = await User.findOne({ email: Email });
 
     if (!user) {
-      return res.status(400).json({ message: "User not found" });
+      return res.status(400).json({
+        message: "User not found"
+      });
     }
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    // generate otp
+    const otp = Math.floor(
+      100000 + Math.random() * 900000
+    ).toString();
+
     user.otp = otp;
-    user.otpExpires = new Date(Date.now() + 10 * 60 * 1000);
+    user.otpExpires = new Date(
+      Date.now() + 10 * 60 * 1000
+    );
+
     await user.save();
 
-    // رد على الـ Flutter فوراً
-    res.json({ message: "OTP sent successfully", otp: otp });
-
-    // ابعت الإيميل في الخلفية
-    resend.emails.send({
-      from: 'onboarding@resend.dev',
+    // send email
+    const info = await transporter.sendMail({
+      from: "aa5079001@smtp-brevo.com",
       to: Email,
-      subject: 'Password Reset OTP',
-      text: `Your OTP is: ${otp}. It will expire in 10 minutes.`
-    }).catch(err => console.log('Mail error:', err));
+      subject: "Password Reset OTP",
+      text: `Your OTP is: ${otp}`
+    });
+
+    console.log("Email sent:", info.response);
+
+    // response after email success
+    res.json({
+      message: "OTP sent successfully"
+    });
 
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.log("Mail error:", err);
+
+    res.status(500).json({
+      message: err.message
+    });
   }
 });
-
 // ================== VERIFY OTP + RESET PASSWORD ==================
 router.post("/reset-password", async (req, res) => {
   try {
