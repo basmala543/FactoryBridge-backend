@@ -7,11 +7,15 @@ const authMiddleware = require("../middleware/authMiddleware");
 const nodemailer = require("nodemailer");
 
 // ================== NODEMAILER ==================
+const nodemailer = require("nodemailer");
+
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: "smtp-relay.brevo.com",
+  port: 587,
+  secure: false,
   auth: {
-    user: "factorybridge7@gmail.com",
-    pass: "Infa sluf qogz wjbw"
+    user: "aa5079001@smtp-brevo.com",
+    pass: "I3V7WTbMx6BLRrqh"
   }
 });
 
@@ -99,6 +103,9 @@ router.post("/forgot-password", async (req, res) => {
   try {
     const { Email } = req.body;
 
+    console.log("Forgot password request for:", Email);
+
+    // check user exists
     const user = await User.findOne({ email: Email });
 
     if (!user) {
@@ -107,10 +114,12 @@ router.post("/forgot-password", async (req, res) => {
       });
     }
 
+    // generate OTP
     const otp = Math.floor(
       100000 + Math.random() * 900000
     ).toString();
 
+    // save OTP in DB
     user.otp = otp;
     user.otpExpires = new Date(
       Date.now() + 10 * 60 * 1000
@@ -118,24 +127,28 @@ router.post("/forgot-password", async (req, res) => {
 
     await user.save();
 
-    await transporter.sendMail({
+    // send email
+    const info = await transporter.sendMail({
       from: "factorybridge7@gmail.com",
       to: Email,
       subject: "Password Reset OTP",
       text: `Your OTP is: ${otp}. It will expire in 10 minutes.`
     });
 
+    console.log("Email sent successfully:", info);
+
     res.json({
       message: "OTP sent successfully"
     });
 
   } catch (err) {
+    console.log("Forgot password error:", err);
+
     res.status(500).json({
       message: err.message
     });
   }
 });
-
 // ================== RESET PASSWORD ==================
 router.post("/reset-password", async (req, res) => {
   try {
