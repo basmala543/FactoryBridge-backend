@@ -6,7 +6,6 @@ const User = require("../models/users");
 const authMiddleware = require("../middleware/authMiddleware");
 
 const nodemailer = require('nodemailer');
-
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
   port: 587,
@@ -14,6 +13,9 @@ const transporter = nodemailer.createTransport({
   auth: {
     user: 'factorybridge7@gmail.com',
     pass: 'lnfa sluf qogz wjbw'
+  },
+  tls: {
+    rejectUnauthorized: false
   }
 });
 
@@ -155,7 +157,7 @@ router.post("/forgot-password", async (req, res) => {
 
     // ✅ ابعتي الإيميل في الخلفية بدون await
     transporter.sendMail({
-      from: 'factorybridge7@gmail.com',
+    from: '"FactoryBridge" <factorybridge7@gmail.com>',
       to: Email,
       subject: 'Password Reset OTP',
       text: `Your OTP is: ${otp}. It will expire in 10 minutes.`
