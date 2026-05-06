@@ -10,18 +10,23 @@ dns.setDefaultResultOrder('ipv4first');
 // السطر ده بيخلي أي عملية اتصال (زي بعت الإيميل) تدور على IPv4 الأول وتطنش الـ IPv6
 
 const transporter = nodemailer.createTransport({
-  host: '74.125.133.108', // ده الـ IP الحقيقي لـ smtp.gmail.com (IPv4)
-  port: 465,
-  secure: true,
+  host: 'smtp.gmail.com', // نرجع نستخدم الاسم عادي مع الإعدادات الجديدة
+  port: 587, // بورت 587 بدل 465
+  secure: false, // لازم false مع بورت 587
   auth: {
     user: process.env.GMAIL_USER,
     pass: process.env.GMAIL_PASS,
   },
-  family: 4, // تأكيد إضافي
+  family: 4, 
+  connectionTimeout: 30000, // زودنا الوقت لـ 30 ثانية عشان نخلص من الـ Timeout
+  greetingTimeout: 20000,
+  socketTimeout: 30000,
   tls: {
-    rejectUnauthorized: false // عشان ميحصلش مشكلة في الـ SSL مع الـ IP المباشر
+    rejectUnauthorized: false,
+    minVersion: 'TLSv1.2' // بنحدد إصدار التشفير عشان نسرع الربط
   }
 });
+
 // ================== SIGNUP ==================
 router.post("/signup", async (req, res) => {
   try {
