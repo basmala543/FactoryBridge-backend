@@ -18,10 +18,9 @@ app.use("/api/brand", brandProfileRoutes);
 
 app.use("/api/auth", authRoutes);
 app.use("/api/factory", factoryProfileRoutes);
-
 mongoose
   .connect(
-    "mongodb+srv://basmala21102004_db_user:26AEes2axrSer11F@cluster0.qtldces.mongodb.net/factorybridge",
+    "mongodb://basmala21102004_db_user:bas21102004@ac-obtbhf4-shard-00-00.qtldces.mongodb.net:27017,ac-obtbhf4-shard-00-01.qtldces.mongodb.net:27017,ac-obtbhf4-shard-00-02.qtldces.mongodb.net:27017/factorybridge?ssl=true&replicaSet=atlas-6nucod-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Cluster0"
   )
   .then(() => {
     console.log("DB connected");
@@ -33,4 +32,3 @@ mongoose
   .catch((err) => {
     console.log("Mongo Error:", err);
   });
-
