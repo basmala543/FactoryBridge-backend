@@ -7,13 +7,15 @@ const authMiddleware = require("../middleware/authMiddleware");
 const nodemailer = require("nodemailer");
 
 
-
 const transporter = nodemailer.createTransport({
-    service: "gmail",
+  service: "gmail",
   auth: {
-      user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-}
+    user: "factorybridge7@gmail.com",
+    pass: "rsfavtgoufceqptu"
+  },
+  tls: {
+    rejectUnauthorized: false
+  }
 });
 
 // ================== SIGNUP ==================
