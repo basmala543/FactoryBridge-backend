@@ -6,22 +6,22 @@ const User = require("../models/users");
 const authMiddleware = require("../middleware/authMiddleware");
 const nodemailer = require("nodemailer");
 const dns = require('node:dns');
-dns.setDefaultResultOrder('ipv4first'); // خليه للاحتياط عشان يسرع عملية البحث عن السيرفر
+dns.setDefaultResultOrder('ipv4first'); 
 
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
   port: 587,
-  secure: false, // لازم false مع بورت 587
+  secure: false, // لازم false مع بورت 587 عشان يشغل الـ STARTTLS
   auth: {
     user: process.env.GMAIL_USER,
     pass: process.env.GMAIL_PASS,
   },
-  // الإعدادات دي بتضمن إن الاتصال ميفصلش بسهولة
-  connectionTimeout: 20000, 
-  greetingTimeout: 15000,
-  socketTimeout: 20000,
+  family: 4, 
+  connectionTimeout: 30000, // زودنا الوقت عشان نضمن الربط
+  greetingTimeout: 20000,
+  socketTimeout: 30000,
   tls: {
-    rejectUnauthorized: false, // عشان يتخطى أي مشاكل في شهادات الـ SSL
+    rejectUnauthorized: false,
     minVersion: 'TLSv1.2'
   }
 });
