@@ -95,41 +95,31 @@ router.post("/forgot-password", async (req, res) => {
     const user = await User.findOne({ email: Email });
 
     if (!user) {
-      return res.status(400).json({
+      return res.status(404).json({
         message: "User not found"
       });
     }
 
-    // generate otp
-    const otp = Math.floor(
-      100000 + Math.random() * 900000
-    ).toString();
+    const otp = Math.floor(100000 + Math.random() * 900000);
 
     user.otp = otp;
-    user.otpExpires = new Date(
-      Date.now() + 10 * 60 * 1000
-    );
+    user.otpExpires = Date.now() + 10 * 60 * 1000;
 
     await user.save();
 
-    // send email
-    const info = await transporter.sendMail({
+    await transporter.sendMail({
       from: "factorybridge7@gmail.com",
       to: Email,
       subject: "Password Reset OTP",
-      text: `Your OTP is: ${otp}`
+      text: `Your OTP is ${otp}`
     });
 
-    console.log("Email sent:", info.response);
-
-    // response after email success
-    res.json({
+    res.status(200).json({
       message: "OTP sent successfully"
     });
 
   } catch (err) {
-    console.log("Mail error:", err);
-
+    console.log(err);   // مهم جدًا
     res.status(500).json({
       message: err.message
     });
