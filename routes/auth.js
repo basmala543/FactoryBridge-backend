@@ -6,19 +6,21 @@ const User = require("../models/users");
 const authMiddleware = require("../middleware/authMiddleware");
 const nodemailer = require("nodemailer");
 
+
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
   host: 'smtp.gmail.com',
-  port: 587, // جرب تغير 465 لـ 587
-  secure: false, // لازم تكون false مع بورت 587
+  port: 465,
+  secure: true, // لأننا مستخدمين بورت 465
   auth: {
     user: process.env.GMAIL_USER,
     pass: process.env.GMAIL_PASS,
   },
-  tls: {
-    rejectUnauthorized: false // السطر ده مهم جداً عشان يحل مشاكل الـ Connection على السيرفرات الخارجية
-  }
-});
+  // الإعدادات دي عشان نتخطى مشكلة الشبكة في Railway
+  family: 4, // السطر ده بيجبره يستخدم IPv4 فقط وبيلغي الـ IPv6 تماماً
+  connectionTimeout: 15000, // زودنا الوقت شوية عشان السيرفر يلحق يربط
+  greetingTimeout: 10000,
+  socketTimeout: 15000,
+});;
 
 // ================== SIGNUP ==================
 router.post("/signup", async (req, res) => {
