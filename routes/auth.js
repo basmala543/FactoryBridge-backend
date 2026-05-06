@@ -6,15 +6,17 @@ const User = require("../models/users");
 const authMiddleware = require("../middleware/authMiddleware");
 const nodemailer = require("nodemailer");
 
-
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 587, // جرب تغير 465 لـ 587
+  secure: false, // لازم تكون false مع بورت 587
   auth: {
-    user: "factorybridge7@gmail.com",
-    pass: "rsfavtgoufceqptu"
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_PASS,
   },
   tls: {
-    rejectUnauthorized: false
+    rejectUnauthorized: false // السطر ده مهم جداً عشان يحل مشاكل الـ Connection على السيرفرات الخارجية
   }
 });
 
