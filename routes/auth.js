@@ -5,23 +5,23 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/users");
 const authMiddleware = require("../middleware/authMiddleware");
 const nodemailer = require("nodemailer");
-
+const dns = require('node:dns');
+dns.setDefaultResultOrder('ipv4first');
+// السطر ده بيخلي أي عملية اتصال (زي بعت الإيميل) تدور على IPv4 الأول وتطنش الـ IPv6
 
 const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
+  host: '74.125.133.108', // ده الـ IP الحقيقي لـ smtp.gmail.com (IPv4)
   port: 465,
-  secure: true, // لأننا مستخدمين بورت 465
+  secure: true,
   auth: {
     user: process.env.GMAIL_USER,
     pass: process.env.GMAIL_PASS,
   },
-  // الإعدادات دي عشان نتخطى مشكلة الشبكة في Railway
-  family: 4, // السطر ده بيجبره يستخدم IPv4 فقط وبيلغي الـ IPv6 تماماً
-  connectionTimeout: 15000, // زودنا الوقت شوية عشان السيرفر يلحق يربط
-  greetingTimeout: 10000,
-  socketTimeout: 15000,
-});;
-
+  family: 4, // تأكيد إضافي
+  tls: {
+    rejectUnauthorized: false // عشان ميحصلش مشكلة في الـ SSL مع الـ IP المباشر
+  }
+});
 // ================== SIGNUP ==================
 router.post("/signup", async (req, res) => {
   try {
