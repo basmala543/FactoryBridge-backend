@@ -9,16 +9,11 @@ const nodemailer = require("nodemailer");
 
 
 const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false, // مهم تكون false مع 587
+    service: "gmail",
   auth: {
     user: "factorybridge7@gmail.com",
     pass: "azhsngxxauocvjsk"
-  },
-  tls: {
-    rejectUnauthorized: false
-  }
+}
 });
 
 // ================== SIGNUP ==================
