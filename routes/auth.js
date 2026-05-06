@@ -6,24 +6,23 @@ const User = require("../models/users");
 const authMiddleware = require("../middleware/authMiddleware");
 const nodemailer = require("nodemailer");
 const dns = require('node:dns');
-dns.setDefaultResultOrder('ipv4first');
-// السطر ده بيخلي أي عملية اتصال (زي بعت الإيميل) تدور على IPv4 الأول وتطنش الـ IPv6
+dns.setDefaultResultOrder('ipv4first'); // خليه للاحتياط عشان يسرع عملية البحث عن السيرفر
 
 const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com', // نرجع نستخدم الاسم عادي مع الإعدادات الجديدة
-  port: 587, // بورت 587 بدل 465
+  host: 'smtp.gmail.com',
+  port: 587,
   secure: false, // لازم false مع بورت 587
   auth: {
     user: process.env.GMAIL_USER,
     pass: process.env.GMAIL_PASS,
   },
-  family: 4, 
-  connectionTimeout: 30000, // زودنا الوقت لـ 30 ثانية عشان نخلص من الـ Timeout
-  greetingTimeout: 20000,
-  socketTimeout: 30000,
+  // الإعدادات دي بتضمن إن الاتصال ميفصلش بسهولة
+  connectionTimeout: 20000, 
+  greetingTimeout: 15000,
+  socketTimeout: 20000,
   tls: {
-    rejectUnauthorized: false,
-    minVersion: 'TLSv1.2' // بنحدد إصدار التشفير عشان نسرع الربط
+    rejectUnauthorized: false, // عشان يتخطى أي مشاكل في شهادات الـ SSL
+    minVersion: 'TLSv1.2'
   }
 });
 
