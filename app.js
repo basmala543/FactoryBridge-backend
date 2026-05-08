@@ -1,14 +1,18 @@
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
+require("dotenv").config();
 
 const app = express();
 
-app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-})); app.use(express.json());
+app.use(
+  cors({
+    origin: "*",
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  }),
+);
+app.use(express.json());
 
 // routes
 const authRoutes = require("./routes/auth");
@@ -19,14 +23,12 @@ app.use("/api/brand", brandProfileRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/factory", factoryProfileRoutes);
 mongoose
-  .connect(
-    "mongodb://basmala21102004_db_user:bas21102004@ac-obtbhf4-shard-00-00.qtldces.mongodb.net:27017,ac-obtbhf4-shard-00-01.qtldces.mongodb.net:27017,ac-obtbhf4-shard-00-02.qtldces.mongodb.net:27017/factorybridge?ssl=true&replicaSet=atlas-6nucod-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Cluster0"
-  )
+  .connect(process.env.MONGODB_URI)
   .then(() => {
     console.log("DB connected");
 
-    app.listen(3000, '0.0.0.0', () => {
-      console.log("Server running on port 3000");
+    app.listen(process.env.PORT || 3000, "0.0.0.0", () => {
+      console.log("Server running on port " + (process.env.PORT || 3000));
     });
   })
   .catch((err) => {
