@@ -23,7 +23,7 @@ app.use("/api/brand", brandProfileRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/factory", factoryProfileRoutes);
 mongoose
-  .connect(process.env.MONGODB_URI)
+  .connect(process.env.MONGO_URI)
   .then(() => {
     console.log("DB connected");
 
