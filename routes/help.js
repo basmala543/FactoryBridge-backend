@@ -73,4 +73,35 @@ router.get('/support-phone', (req, res) => {
         availableHours: "9 AM - 9 PM" 
     });
 });
+
+
+
+const sendEmail = require('../utils/sendEmail');
+
+// POST /api/help/email-support
+router.post('/email-support', async (req, res) => {
+  const { userEmail, subject, message } = req.body;
+
+  try {
+    // 1. إرسال إيميل لفريق الدعم يبلغهم بالشكوى
+    await sendEmail({
+      email: 'support@factorybridge.com', // إيميل الشركة الأساسي
+      subject: `New Support Request: ${subject}`,
+      message: `From: ${userEmail}\n\nMessage: ${message}`,
+    });
+
+    // 2. (اختياري) إرسال إيميل تأكيد للمستخدم
+    await sendEmail({
+      email: userEmail,
+      subject: 'We received your request - FactoryBridge',
+      message: 'Thank you for contacting us. Our team will get back to you soon.',
+    });
+
+    res.status(200).json({ success: true, message: "Emails sent successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Email could not be sent" });
+  }
+});
+
 module.exports = router;
