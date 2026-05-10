@@ -140,6 +140,24 @@ router.put(
   },
 );
 
-module.exports = router;
+// البحث عن المصانع
+const FactoryProfile = require('./models/factoryProfile'); // تأكدي من المسار الصحيح
+
+router.get('/search-factories', async (req, res) => {
+    try {
+        const searchTerm = req.query.q; // الكلمة اللي المستخدم كتبها في السيرش
+        
+        const results = await FactoryProfile.find({
+            $or: [
+                { factoryName: { $regex: searchTerm, $options: 'i' } }, // بحث بالاسم
+                { industry: { $regex: searchTerm, $options: 'i' } }    // بحث بمجال الصناعة
+            ]
+        });
+        
+        res.status(200).json(results);
+    } catch (error) {
+        res.status(500).json({ message: "خطأ في عملية البحث", error });
+    }
+});
 
 module.exports = router;
