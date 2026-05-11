@@ -140,8 +140,7 @@ router.put(
   },
 );
 
-// البحث عن المصانع
-const FactoryProfile = require('./models/factoryProfile'); // تأكدي من المسار الصحيح
+// search bar in brand home
 
 router.get('/search-factories', async (req, res) => {
     try {
@@ -161,3 +160,9 @@ router.get('/search-factories', async (req, res) => {
 });
 
 module.exports = router;
+
+const FactoryProfile = require("../models/factoryProfile");
+const FactoryProfile = require('./models/factoryProfile'); // تأكدي من المسار الصحيح
+
+
+
