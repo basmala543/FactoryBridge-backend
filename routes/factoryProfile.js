@@ -161,8 +161,5 @@ router.get('/search-factories', async (req, res) => {
 
 module.exports = router;
 
-const FactoryProfile = require("../models/factoryProfile");
-const FactoryProfile = require('./models/factoryProfile'); // تأكدي من المسار الصحيح
-
 
 
