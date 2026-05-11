@@ -144,12 +144,14 @@ router.put(
 
 router.get('/search-factories', async (req, res) => {
     try {
-        const searchTerm = req.query.q; // الكلمة اللي المستخدم كتبها في السيرش
+        const searchTerm = req.query.q;
         
         const results = await FactoryProfile.find({
             $or: [
-                { factoryName: { $regex: searchTerm, $options: 'i' } }, // بحث بالاسم
-                { industry: { $regex: searchTerm, $options: 'i' } }    // بحث بمجال الصناعة
+                { factoryName: { $regex: searchTerm, $options: 'i' } },
+                { productCategories: { $regex: searchTerm, $options: 'i' } }, // ✅ الاسم الصح
+                { description: { $regex: searchTerm, $options: 'i' } },
+                { location: { $regex: searchTerm, $options: 'i' } },
             ]
         });
         
@@ -158,7 +160,6 @@ router.get('/search-factories', async (req, res) => {
         res.status(500).json({ message: "خطأ في عملية البحث", error });
     }
 });
-
 module.exports = router;
 
 
