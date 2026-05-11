@@ -160,6 +160,27 @@ router.get('/search-factories', async (req, res) => {
         res.status(500).json({ message: "خطأ في عملية البحث", error });
     }
 });
+
+// category filter in brand home
+router.get('/by-category', async (req, res) => {
+    try {
+        const category = req.query.category;
+
+        if (!category) {
+            return res.status(400).json({ message: "Category is required" });
+        }
+
+        const results = await FactoryProfile.find({
+            productCategories: { $regex: category, $options: 'i' }
+        });
+
+        res.status(200).json(results);
+    } catch (error) {
+        res.status(500).json({ message: "خطأ في جلب المصانع", error });
+    }
+});
+
+
 module.exports = router;
 
 
