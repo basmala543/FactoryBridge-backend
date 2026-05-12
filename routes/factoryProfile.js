@@ -181,12 +181,13 @@ router.get('/by-category', async (req, res) => {
 });
 router.get('/recommended', async (req, res) => {
   try {
-    const factories = await FactoryProfile.find() // ← مفيش فلتر
+    const factories = await FactoryProfile.find()
       .sort({ createdAt: -1 })
       .limit(10);
     res.status(200).json(factories);
   } catch (error) {
-    res.status(500).json({ message: "Error", error });
+    console.error('Recommended error:', error);
+    res.status(500).json({ message: "Error", error: error.message });
   }
 });
 
@@ -196,7 +197,8 @@ router.get('/top-deals', async (req, res) => {
       .limit(10);
     res.status(200).json(factories);
   } catch (error) {
-    res.status(500).json({ message: "Error", error });
+    console.error('Top deals error:', error);
+    res.status(500).json({ message: "Error", error: error.message });
   }
 });
 
