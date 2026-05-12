@@ -47,10 +47,10 @@ const factoryProfileSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
-
-    isTopDeal: { type: Boolean, default: false }, // ← هنا
+isTopDeal: { type: Boolean, default: false },
   },
   {
     timestamps: true,
   },
 );
+module.exports = mongoose.model("FactoryProfile", factoryProfileSchema);
