@@ -85,8 +85,9 @@ router.post('/email-support', async (req, res) => {
   try {
     // 1. إرسال إيميل لفريق الدعم يبلغهم بالشكوى
     await sendEmail({
-      email: 'support@factorybridge.com', // إيميل الشركة الأساسي
-      subject: `New Support Request: ${subject}`,
+  email: process.env.GMAIL_USER, // ✅ هيوصل على factorybridge7@gmail.com
+  subject: `New Support Request: ${subject}`,
+
       message: `From: ${userEmail}\n\nMessage: ${message}`,
     });
 
