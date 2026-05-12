@@ -181,8 +181,8 @@ router.get('/by-category', async (req, res) => {
 });
 router.get('/recommended', async (req, res) => {
   try {
-    const factories = await FactoryProfile.find()
-      .sort({ rating: -1 })
+    const factories = await FactoryProfile.find() // ← مفيش فلتر
+      .sort({ createdAt: -1 })
       .limit(10);
     res.status(200).json(factories);
   } catch (error) {
