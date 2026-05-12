@@ -179,7 +179,23 @@ router.get('/by-category', async (req, res) => {
         res.status(500).json({ message: "خطأ في جلب المصانع", error });
     }
 });
+router.get('/recommended', async (req, res) => {
+  try {
+    const factories = await FactoryProfile.find().sort({ rating: -1 }).limit(10);
+    res.status(200).json(factories);
+  } catch (error) {
+    res.status(500).json({ message: "Error", error });
+  }
+});
 
+router.get('/top-deals', async (req, res) => {
+  try {
+    const factories = await FactoryProfile.find().sort({ createdAt: -1 }).limit(10);
+    res.status(200).json(factories);
+  } catch (error) {
+    res.status(500).json({ message: "Error", error });
+  }
+});
 
 module.exports = router;
 
