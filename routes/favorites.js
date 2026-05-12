@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const Favorite = require("../models/Favorite");
+const Favorite = require("../models/favorites");
 const authMiddleware = require("../middleware/authMiddleware");
 
 // GET /api/user/favorites - جيب favorites الـ user
