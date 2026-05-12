@@ -3,16 +3,15 @@ const cors = require("cors");
 const mongoose = require("mongoose");
 const http = require("http");
 const { Server } = require("socket.io");
-const fetch = require("node-fetch");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 require("dotenv").config();
 
-// Models
+// الموديلات
 const Message = require("./models/Message");
 
 const app = express();
 
-/* ---------------- MIDDLEWARE ---------------- */
-
+// Middleware
 app.use(
   cors({
     origin: "*",
@@ -20,11 +19,9 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
-
 app.use(express.json());
 
-/* ---------------- ROUTES ---------------- */
-
+// Routes
 const authRoutes = require("./routes/auth");
 const factoryProfileRoutes = require("./routes/factoryProfile");
 const brandProfileRoutes = require("./routes/brandProfile");
@@ -35,99 +32,141 @@ app.use("/api/help", helpRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/factory", factoryProfileRoutes);
 
-/* ---------------- SERVER + SOCKET ---------------- */
+// ============ Gemini AI Setup ============
+const AI_SYSTEM_PROMPT = `You are the FactoryBridge support assistant.
+FactoryBridge is a platform that connects fashion brands with manufacturing factories.
 
+Guidelines:
+- Be concise, warm, and professional.
+- Help users with: finding factories, posting orders, account issues, payments, shipping, and platform features.
+- If a question needs human review (refunds, disputes, legal), tell the user you'll connect them with a human agent.
+- Keep replies under 4 sentences unless the user asks for detail.
+- If the user writes in Arabic, reply in Arabic. Otherwise reply in English.`;
+
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const geminiModel = genAI.getGenerativeModel({
+  model: "gemini-2.0-flash",
+  systemInstruction: AI_SYSTEM_PROMPT,
+  generationConfig: {
+    maxOutputTokens: 400,
+    temperature: 0.7,
+  },
+});
+
+async function generateAiReply(userId) {
+  // هات آخر 20 رسالة بين المستخدم و الـ AI
+  const history = await Message.find({
+    $or: [
+      { senderId: userId, receiverId: "ai" },
+      { senderId: "ai", receiverId: userId },
+    ],
+  })
+    .sort({ createdAt: 1 })
+    .limit(20);
+
+  if (history.length === 0) return null;
+
+  // تحويل لصيغة Gemini
+  let contents = history.map((m) => ({
+    role: m.senderId === "ai" ? "model" : "user",
+    parts: [{ text: String(m.message || "").slice(0, 2000) }],
+  }));
+
+  // Gemini محتاج التاريخ يبدأ بـ user role
+  while (contents.length > 0 && contents[0].role !== "user") {
+    contents.shift();
+  }
+
+  if (contents.length === 0) return null;
+
+  const result = await geminiModel.generateContent({ contents });
+  const reply = result.response.text().trim();
+
+  return reply || null;
+}
+
+// ============ HTTP + Socket Server ============
 const server = http.createServer(app);
-
 const io = new Server(server, {
   cors: { origin: "*" },
 });
 
-/* ---------------- CLAUDE FUNCTION ---------------- */
-
-async function callClaude(message) {
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": process.env.CLAUDE_API_KEY,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 300,
-      system:
-        "You are a helpful support agent for FactoryBridge. Be concise and friendly.",
-      messages: [{ role: "user", content: message }],
-    }),
-  });
-
-  const data = await response.json();
-  return data.content[0].text;
-}
-
-/* ---------------- SOCKET LOGIC ---------------- */
-
 io.on("connection", (socket) => {
-  console.log("✅ User Connected:", socket.id);
+  console.log("✅ User Connected: " + socket.id);
 
-  // Join private room
   socket.on("join_room", (userId) => {
     socket.join(userId);
-    console.log(`👤 User ${userId} joined room`);
+    console.log(`👤 User ${userId} joined their private room`);
   });
 
-  // Send message
   socket.on("send_message", async (data) => {
     try {
       const { senderId, receiverId, message } = data;
+      const target = receiverId || "ai";
 
-      // Save user message
-      const newMessage = new Message({
+      // 1) حفظ رسالة المستخدم
+      const userMsg = new Message({
         senderId,
-        receiverId: receiverId || "admin",
+        receiverId: target,
+        message,
+      });
+      await userMsg.save();
+
+      // 2) echo رسالة المستخدم في غرفته
+      io.to(senderId).emit("receive_message", {
+        senderId,
+        receiverId: target,
         message,
       });
 
-      await newMessage.save();
-
-      /* -------- AI RESPONSE -------- */
-
-      if (receiverId === "admin" && senderId !== "admin") {
-        let aiReply = "Sorry, I couldn't respond right now.";
-
-        try {
-          aiReply = await callClaude(message);
-        } catch (error) {
-          console.error("Claude Error:", error);
-        }
-
-        // Save AI message
-        const aiMessage = new Message({
-          senderId: "admin",
-          receiverId: senderId,
-          message: aiReply,
+      // 3) لو المستلم أدمن بشري، ابعتلوا وخلاص
+      if (target !== "ai") {
+        io.to(target).emit("receive_message", {
+          senderId,
+          receiverId: target,
+          message,
         });
-
-        await aiMessage.save();
-
-        // Send AI reply to user
-        io.to(senderId).emit("receive_message", {
-          senderId: "admin",
-          receiverId: senderId,
-          message: aiReply,
-        });
-
-        console.log("🤖 AI replied to", senderId);
-      } else {
-        // Normal chat
-        io.to(senderId)
-          .to(receiverId)
-          .emit("receive_message", data);
+        console.log(`📩 Forwarded from ${senderId} to human ${target}`);
+        return;
       }
 
+      // 4) لو المستلم AI، ولّد الرد من Gemini
+      io.to(senderId).emit("ai_typing", { typing: true });
+
+      let reply;
+      try {
+        reply = await generateAiReply(senderId);
+      } catch (aiErr) {
+        console.error("❌ Gemini API error:", aiErr);
+        reply =
+          "Sorry, I'm having trouble right now. Please try again in a moment.";
+      }
+
+      io.to(senderId).emit("ai_typing", { typing: false });
+
+      if (!reply) reply = "Sorry, I didn't catch that. Could you rephrase?";
+
+      // 5) حفظ رد الـ AI
+      const aiMsg = new Message({
+        senderId: "ai",
+        receiverId: senderId,
+        message: reply,
+      });
+      await aiMsg.save();
+
+      // 6) إرسال رد الـ AI للمستخدم
+      io.to(senderId).emit("receive_message", {
+        senderId: "ai",
+        receiverId: senderId,
+        message: reply,
+      });
+
+      console.log(`🤖 Gemini replied to ${senderId}`);
     } catch (err) {
       console.error("❌ Error in send_message:", err);
+      if (data?.senderId) {
+        io.to(data.senderId).emit("ai_typing", { typing: false });
+      }
     }
   });
 
@@ -136,21 +175,35 @@ io.on("connection", (socket) => {
   });
 });
 
-/* ---------------- DATABASE + START ---------------- */
+// ============ MongoDB + Server Start ============
+const MONGO_URI = process.env.MONGO_URI;
+if (!MONGO_URI) {
+  console.error("❌ MONGO_URI is missing from environment variables");
+  process.exit(1);
+}
 
-const MONGO_URL = process.env.MONGO_URL;
+if (!process.env.GEMINI_API_KEY) {
+  console.warn("⚠️ GEMINI_API_KEY is missing — AI replies will fail");
+}
 
-mongoose
-  .connect(MONGO_URL)
+mongoose 
+  .connect(MONGO_URI)
   .then(() => {
-    console.log("✅ MongoDB Connected");
+    console.log("✅ MongoDB Connected Successfully");
 
     const PORT = process.env.PORT || 3000;
 
+    server.on("error", (e) => {
+      if (e.code === "EADDRINUSE") {
+        console.error(`⚠️ Port ${PORT} is busy.`);
+        process.exit(1);
+      }
+    });
+
     server.listen(PORT, "0.0.0.0", () => {
-      console.log(`🚀 Server running on port ${PORT}`);
+      console.log(`🚀 Server & Socket ready at http://localhost:${PORT}`);
     });
   })
   .catch((err) => {
-    console.log("❌ Mongo Error:", err);
+    console.log("❌ Mongo Connection Error:", err);
   });
