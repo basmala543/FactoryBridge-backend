@@ -26,12 +26,15 @@ const authRoutes = require("./routes/auth");
 const factoryProfileRoutes = require("./routes/factoryProfile");
 const brandProfileRoutes = require("./routes/brandProfile");
 const helpRoutes = require("./routes/help");
+const favoriteRoutes = require("./routes/favorites");
+
+
 
 app.use("/api/brand", brandProfileRoutes);
 app.use("/api/help", helpRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/factory", factoryProfileRoutes);
-
+app.use("/api/user/favorites", favoriteRoutes);
 // ============ Gemini AI Setup ============
 const AI_SYSTEM_PROMPT = `You are the FactoryBridge support assistant.
 FactoryBridge is a platform that connects fashion brands with manufacturing factories.
