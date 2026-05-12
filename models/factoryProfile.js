@@ -1,5 +1,3 @@
-const mongoose = require("mongoose");
-
 const factoryProfileSchema = new mongoose.Schema(
   {
     userId: {
@@ -47,10 +45,10 @@ const factoryProfileSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
+
+    isTopDeal: { type: Boolean, default: false }, // ← هنا
   },
   {
     timestamps: true,
   },
 );
-
-module.exports = mongoose.model("FactoryProfile", factoryProfileSchema);
