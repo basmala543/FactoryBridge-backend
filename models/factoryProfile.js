@@ -1,3 +1,5 @@
+const mongoose = require('mongoose');
+
 const factoryProfileSchema = new mongoose.Schema(
   {
     userId: {
