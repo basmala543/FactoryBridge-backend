@@ -1,16 +1,18 @@
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
-const http = require("http"); 
-const { Server } = require("socket.io"); 
+const http = require("http");
+const { Server } = require("socket.io");
+const fetch = require("node-fetch");
 require("dotenv").config();
 
-// استدعاء الموديل الخاص بالرسائل (تأكدي من وجود الملف في models/Message.js)
-const Message = require('./models/Message');
+// Models
+const Message = require("./models/Message");
 
 const app = express();
 
-// Middleware
+/* ---------------- MIDDLEWARE ---------------- */
+
 app.use(
   cors({
     origin: "*",
@@ -18,84 +20,137 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+
 app.use(express.json());
 
-// Routes Setup
+/* ---------------- ROUTES ---------------- */
+
 const authRoutes = require("./routes/auth");
 const factoryProfileRoutes = require("./routes/factoryProfile");
 const brandProfileRoutes = require("./routes/brandProfile");
-const helpRoutes = require('./routes/help');
+const helpRoutes = require("./routes/help");
 
 app.use("/api/brand", brandProfileRoutes);
-app.use('/api/help', helpRoutes);
+app.use("/api/help", helpRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/factory", factoryProfileRoutes);
 
-// 3. إعداد السيرفر ليدعم الـ Socket والـ HTTP مع بعض
-const server = http.createServer(app); 
+/* ---------------- SERVER + SOCKET ---------------- */
+
+const server = http.createServer(app);
+
 const io = new Server(server, {
-  cors: { origin: "*" } 
+  cors: { origin: "*" },
 });
 
-// 4. منطق الـ Live Chat المطور (Rooms & Persistence)
-io.on('connection', (socket) => {
-  console.log('✅ User Connected: ' + socket.id);
+/* ---------------- CLAUDE FUNCTION ---------------- */
 
-  // أ) انضمام المستخدم لغرفة خاصة به (عشان الرسايل متبقاش عامة للكل)
-  socket.on('join_room', (userId) => {
-    socket.join(userId);
-    console.log(`👤 User ${userId} joined their private room`);
+async function callClaude(message) {
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": process.env.CLAUDE_API_KEY,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 300,
+      system:
+        "You are a helpful support agent for FactoryBridge. Be concise and friendly.",
+      messages: [{ role: "user", content: message }],
+    }),
   });
 
-  // ب) استقبال وحفظ وإرسال الرسالة
-  socket.on('send_message', async (data) => {
+  const data = await response.json();
+  return data.content[0].text;
+}
+
+/* ---------------- SOCKET LOGIC ---------------- */
+
+io.on("connection", (socket) => {
+  console.log("✅ User Connected:", socket.id);
+
+  // Join private room
+  socket.on("join_room", (userId) => {
+    socket.join(userId);
+    console.log(`👤 User ${userId} joined room`);
+  });
+
+  // Send message
+  socket.on("send_message", async (data) => {
     try {
       const { senderId, receiverId, message } = data;
 
-      // 1. حفظ الرسالة في الـ MongoDB
+      // Save user message
       const newMessage = new Message({
         senderId,
-        receiverId: receiverId || 'admin', // لو مفيش مستلم محدد بتروح للأدمن
-        message
+        receiverId: receiverId || "admin",
+        message,
       });
+
       await newMessage.save();
 
-      // 2. إرسال الرسالة للمرسل والمستقبل فقط (نظام الغرف)
-      io.to(senderId).to(receiverId).emit('receive_message', data);
-      
-      console.log(`📩 Message saved and sent from ${senderId} to ${receiverId}`);
+      /* -------- AI RESPONSE -------- */
+
+      if (receiverId === "admin" && senderId !== "admin") {
+        let aiReply = "Sorry, I couldn't respond right now.";
+
+        try {
+          aiReply = await callClaude(message);
+        } catch (error) {
+          console.error("Claude Error:", error);
+        }
+
+        // Save AI message
+        const aiMessage = new Message({
+          senderId: "admin",
+          receiverId: senderId,
+          message: aiReply,
+        });
+
+        await aiMessage.save();
+
+        // Send AI reply to user
+        io.to(senderId).emit("receive_message", {
+          senderId: "admin",
+          receiverId: senderId,
+          message: aiReply,
+        });
+
+        console.log("🤖 AI replied to", senderId);
+      } else {
+        // Normal chat
+        io.to(senderId)
+          .to(receiverId)
+          .emit("receive_message", data);
+      }
+
     } catch (err) {
       console.error("❌ Error in send_message:", err);
     }
   });
 
-  socket.on('disconnect', () => {
-    console.log('❌ User Disconnected');
+  socket.on("disconnect", () => {
+    console.log("❌ User Disconnected");
   });
 });
 
-// 5. الاتصال بالقاعدة وتشغيل السيرفر
-const MONGO_URL = "mongodb://basmala21102004_db_user:bas21102004@ac-obtbhf4-shard-00-00.qtldces.mongodb.net:27017,ac-obtbhf4-shard-00-01.qtldces.mongodb.net:27017,ac-obtbhf4-shard-00-02.qtldces.mongodb.net:27017/factorybridge?ssl=true&replicaSet=atlas-6nucod-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Cluster0";
+/* ---------------- DATABASE + START ---------------- */
+
+const MONGO_URL = process.env.MONGO_URL;
 
 mongoose
   .connect(MONGO_URL)
   .then(() => {
-    console.log("✅ MongoDB Connected Successfully");
+    console.log("✅ MongoDB Connected");
 
     const PORT = process.env.PORT || 3000;
 
-    // التعامل مع خطأ البورت المشغول برمجياً
-    server.on('error', (e) => {
-      if (e.code === 'EADDRINUSE') {
-        console.error(`⚠️ Port ${PORT} is busy. Please close other terminals or processes.`);
-        process.exit(1); // يقفل السيرفر بدل ما يفضل "مهنج"
-      }
-    });
-
     server.listen(PORT, "0.0.0.0", () => {
-      console.log(`🚀 Server & Socket ready at http://localhost:${PORT}`);
+      console.log(`🚀 Server running on port ${PORT}`);
     });
   })
   .catch((err) => {
-    console.log("❌ Mongo Connection Error:", err);
+    console.log("❌ Mongo Error:", err);
   });
