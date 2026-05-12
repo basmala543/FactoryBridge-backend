@@ -1,7 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const FactoryProfile = require('../models/FactoryProfile');
-const authMiddleware = require("../middleware/authMiddleware");
+const FactoryProfile = require('../models/factoryProfile');
 const {
   uploadFactoryMedia,
   handleUploadError,
