@@ -45,7 +45,7 @@ Guidelines:
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const geminiModel = genAI.getGenerativeModel({
-  model: "gemini-2.0-flash",
+  model: "gemini-2.5-flash",  // ✅ أحدث وحدود أحسن
   systemInstruction: AI_SYSTEM_PROMPT,
   generationConfig: {
     maxOutputTokens: 400,
