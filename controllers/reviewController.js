@@ -1,20 +1,16 @@
 const Review = require('../models/review');
 
 // إضافة مراجعة جديدة
-exports.addReview = async (req, res) => {
+exports.getFactoryReviews = async (req, res) => {
   try {
-    const { factoryId, rating, comment, userName } = req.body;
-    const newReview = new Review({
-      factory: factoryId,
-      user: req.user.id, // نأخذه من الـ authMiddleware
-      userName,
-      rating,
-      comment
-    });
-    await newReview.save();
-    res.status(201).json(newReview);
+    const reviews = await Review.find({ 
+      factory: req.params.factoryId 
+    }).sort({ createdAt: -1 });
+    
+    // ✅ غير ده:
+    res.json({ data: reviews }); // عشان Flutter تتوقع { data: [...] }
   } catch (error) {
-    res.status(500).json({ message: "Error adding review", error });
+    res.status(500).json({ message: "Error fetching reviews", error });
   }
 };
 
