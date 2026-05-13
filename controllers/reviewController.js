@@ -6,7 +6,7 @@ exports.addReview = async (req, res) => {
     const { factoryId, rating, comment, userName } = req.body;
     const newReview = new Review({
       factory: factoryId,
-      user: req.user.id,
+user: req.user.userId,
       userName,
       rating,
       comment
