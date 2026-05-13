@@ -1,4 +1,4 @@
-const Review = require('../models/Review');
+const Review = require('../models/review');
 
 // إضافة مراجعة جديدة
 exports.addReview = async (req, res) => {
