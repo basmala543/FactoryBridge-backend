@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const ctrl = require('../controllers/sampleRequestController');
 const auth = require('../middleware/authMiddleware');
+router.get('/brand', auth, ctrl.getBrandRequests); // ✅ زودي ده
 
 router.post('/', auth, ctrl.createRequest);
 router.get('/factory', auth, ctrl.getFactoryRequests);
