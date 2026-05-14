@@ -8,5 +8,6 @@ router.put('/mark-all-read', auth, ctrl.markAllAsRead);
 router.put('/:id/read', auth, ctrl.markAsRead);
 router.delete('/:id', auth, ctrl.deleteNotification);
 router.get('/unread-count', auth, ctrl.getUnreadCount);
+router.post('/', auth, ctrl.createNotification);
 
 module.exports = router;

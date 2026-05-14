@@ -47,5 +47,25 @@ exports.getUnreadCount = async (req, res) => {
     res.json({ count });
   } catch (error) {
     res.status(500).json({ message: 'Error', error });
+  };
+  exports.createNotification = async (req, res) => {
+  try {
+    const { userId, title, message, type, data } = req.body;
+
+    const notification = await Notification.create({
+      user: userId,
+      title,
+      message,
+      type: type || 'system',
+      data,
+    });
+
+    res.status(201).json({ 
+      message: 'Notification created', 
+      data: { ...notification.toObject(), id: notification._id } 
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error creating notification', error });
   }
+};
 };
