@@ -1,16 +1,11 @@
 const SampleRequest = require('../models/SampleRequest');
 const Notification = require('../models/Notification');
-
-// البراند يبعت request
-const SampleRequest = require('../models/SampleRequest');
-const Notification = require('../models/Notification');
-const FactoryProfile = require('../models/factoryProfile'); // ← أضيف ده
+const FactoryProfile = require('../models/factoryProfile');
 
 exports.createRequest = async (req, res) => {
   try {
     const { factoryId, productName, quantity, notes } = req.body;
 
-    // ← جيب الـ userId بتاع الـ factory
     const factoryProfile = await FactoryProfile.findById(factoryId);
     if (!factoryProfile) {
       return res.status(404).json({ message: "Factory not found" });
@@ -25,7 +20,6 @@ exports.createRequest = async (req, res) => {
       notes,
     });
 
-    // ← دلوقتي بنبعت الـ notification للـ userId الصح
     await Notification.create({
       user: factoryUserId,
       title: 'New Sample Request',
@@ -39,7 +33,6 @@ exports.createRequest = async (req, res) => {
   }
 };
 
-// المصنع يشوف الـ requests بتاعته
 exports.getFactoryRequests = async (req, res) => {
   try {
     const requests = await SampleRequest.find({ 
@@ -51,7 +44,6 @@ exports.getFactoryRequests = async (req, res) => {
   }
 };
 
-// المصنع يقبل أو يرفض
 exports.updateStatus = async (req, res) => {
   try {
     const { status } = req.body;
