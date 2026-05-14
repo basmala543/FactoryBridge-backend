@@ -38,7 +38,7 @@ app.use("/api/user/favorites", favoriteRoutes);
 app.use("/api/chats", chatRoutes);
 app.use('/api/reviews', require('./routes/review'));
 app.use('/api/notifications', require('./routes/notifications'));
-
+app.use('/api/sample-requests', require('./routes/sampleRequests'));
 
 // ============ Gemini AI Setup ============
 const AI_SYSTEM_PROMPT = `You are the FactoryBridge support assistant.
