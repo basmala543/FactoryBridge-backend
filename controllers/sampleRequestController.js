@@ -19,13 +19,18 @@ exports.createRequest = async (req, res) => {
       quantity,
       notes,
     });
-
-    await Notification.create({
-      user: factoryUserId,
-      title: 'New Sample Request',
-      message: `You received a new sample request for "${productName}" (${quantity} units).`,
-      type: 'system',
-    });
+// بعد ✅
+await Notification.create({
+  user: factoryUserId,
+  title: 'New Sample Request',
+  message: `You received a new sample request for "${productName}" (${quantity} units).`,
+  type: 'system',
+  data: {
+    requestId: request._id,
+    productName,
+    quantity,
+  },
+});
 
     res.status(201).json({ data: request });
   } catch (error) {
