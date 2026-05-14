@@ -37,3 +37,15 @@ exports.deleteNotification = async (req, res) => {
     res.status(500).json({ message: "Error", error });
   }
 };
+
+exports.getUnreadCount = async (req, res) => {
+  try {
+    const count = await Notification.countDocuments({ 
+      user: req.user.userId, 
+      isRead: false 
+    });
+    res.json({ count });
+  } catch (error) {
+    res.status(500).json({ message: 'Error', error });
+  }
+};

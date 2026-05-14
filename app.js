@@ -28,7 +28,7 @@ const brandProfileRoutes = require("./routes/brandProfile");
 const helpRoutes = require("./routes/help");
 const favoriteRoutes = require("./routes/favorites");
 const chatRoutes = require("./routes/chat");
-
+const sampleRequestsRouter = require('./routes/sampleRequests');
 
 app.use("/api/brand", brandProfileRoutes);
 app.use("/api/help", helpRoutes);
@@ -38,7 +38,7 @@ app.use("/api/user/favorites", favoriteRoutes);
 app.use("/api/chats", chatRoutes);
 app.use('/api/reviews', require('./routes/review'));
 app.use('/api/notifications', require('./routes/notifications'));
-app.use('/api/sample-requests', require('./routes/sampleRequests'));
+app.use('/api/sample-requests', sampleRequestsRouter);
 
 // ============ Gemini AI Setup ============
 const AI_SYSTEM_PROMPT = `You are the FactoryBridge support assistant.

@@ -12,6 +12,15 @@ exports.createRequest = async (req, res) => {
       quantity,
       notes,
     });
+
+    // ✅ الجديد
+    await Notification.create({
+      user: factoryId,
+      title: 'New Sample Request',
+      message: `You received a new sample request for "${productName}" (${quantity} units).`,
+      type: 'system',
+    });
+
     res.status(201).json({ data: request });
   } catch (error) {
     res.status(500).json({ message: "Error creating request", error });
@@ -33,7 +42,7 @@ exports.getFactoryRequests = async (req, res) => {
 // المصنع يقبل أو يرفض
 exports.updateStatus = async (req, res) => {
   try {
-    const { status } = req.body; // 'accepted' or 'rejected'
+    const { status } = req.body;
     const request = await SampleRequest.findByIdAndUpdate(
       req.params.id,
       { status },
@@ -44,7 +53,6 @@ exports.updateStatus = async (req, res) => {
       return res.status(404).json({ message: "Request not found" });
     }
 
-    // ابعت notification للبراند
     if (status === 'accepted') {
       await Notification.create({
         user: request.brand,
