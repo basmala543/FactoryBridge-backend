@@ -2,9 +2,21 @@ const SampleRequest = require('../models/SampleRequest');
 const Notification = require('../models/Notification');
 
 // البراند يبعت request
+const SampleRequest = require('../models/SampleRequest');
+const Notification = require('../models/Notification');
+const FactoryProfile = require('../models/factoryProfile'); // ← أضيف ده
+
 exports.createRequest = async (req, res) => {
   try {
     const { factoryId, productName, quantity, notes } = req.body;
+
+    // ← جيب الـ userId بتاع الـ factory
+    const factoryProfile = await FactoryProfile.findById(factoryId);
+    if (!factoryProfile) {
+      return res.status(404).json({ message: "Factory not found" });
+    }
+    const factoryUserId = factoryProfile.userId;
+
     const request = await SampleRequest.create({
       brand: req.user.userId,
       factory: factoryId,
@@ -13,9 +25,9 @@ exports.createRequest = async (req, res) => {
       notes,
     });
 
-    // ✅ الجديد
+    // ← دلوقتي بنبعت الـ notification للـ userId الصح
     await Notification.create({
-      user: factoryId,
+      user: factoryUserId,
       title: 'New Sample Request',
       message: `You received a new sample request for "${productName}" (${quantity} units).`,
       type: 'system',
