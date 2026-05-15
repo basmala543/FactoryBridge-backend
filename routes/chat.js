@@ -62,12 +62,16 @@ router.get("/", authMiddleware, async (req, res) => {
 
     const participantIds = conversations.map((c) => c.participantId);
 
+    const validParticipantIds = participantIds.filter(id =>
+      id !== 'ai' && mongoose.Types.ObjectId.isValid(id)
+    );
+
     const factoryProfiles = await FactoryProfile.find({
-      userId: { $in: participantIds }
+      userId: { $in: validParticipantIds }
     }).select('userId factoryName');
 
     const brandProfiles = await BrandProfile.find({
-      userId: { $in: participantIds }
+      userId: { $in: validParticipantIds }
     }).select('userId brandName');
 
     const profileMap = {};
@@ -78,14 +82,10 @@ router.get("/", authMiddleware, async (req, res) => {
       profileMap[p.userId.toString()] = p.brandName;
     });
 
-    const validIds = participantIds.filter(id =>
-      id !== 'ai' && mongoose.Types.ObjectId.isValid(id)
-    );
-
     let participants = [];
     try {
       participants = await User.find({
-        _id: { $in: validIds.map(id => new mongoose.Types.ObjectId(id)) },
+        _id: { $in: validParticipantIds.map(id => new mongoose.Types.ObjectId(id)) },
       }).select("_id name companyName profileImage");
     } catch (_) {}
 
