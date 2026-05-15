@@ -39,7 +39,7 @@ app.use("/api/chats", chatRoutes);
 app.use('/api/reviews', require('./routes/review'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/sample-requests', sampleRequestsRouter);
-
+app.use('/api/orders', require('./routes/Orders'));
 // ============ Gemini AI Setup ============
 const AI_SYSTEM_PROMPT = `You are the FactoryBridge support assistant.
 FactoryBridge is a platform that connects fashion brands with manufacturing factories.

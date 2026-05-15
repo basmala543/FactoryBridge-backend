@@ -28,17 +28,22 @@ router.post(
       // Get media URLs from uploaded files
       const mediaUrls = req.files ? req.files.map((file) => file.path) : [];
 
-      const newProfile = new FactoryProfile({
-        userId: req.user.userId,
-        factoryName,
-        description,
-        location,
-        productCategories,
-        productionCapacity,
-        certifications,
-        machinery,
-        media: mediaUrls,
-      });
+    const newProfile = new FactoryProfile({
+  userId: req.user.userId,
+  factoryName,
+  description,
+  location,
+  productCategories,
+  productionCapacity,
+  certifications,
+  machinery,
+  media: mediaUrls,
+  factoryProducts: req.body.factoryProducts
+    ? typeof req.body.factoryProducts === 'string'
+      ? JSON.parse(req.body.factoryProducts)
+      : req.body.factoryProducts
+    : [],
+});
 
       await newProfile.save();
 
@@ -86,26 +91,33 @@ router.put(
   handleUploadError,
   async (req, res) => {
     try {
-      const {
-        factoryName,
-        description,
-        location,
-        productCategories,
-        productionCapacity,
-        certifications,
-        machinery,
-      } = req.body;
+     const {
+  factoryName,
+  description,
+  location,
+  productCategories,
+  productionCapacity,
+  certifications,
+  machinery,
+  factoryProducts,
+} = req.body;
 
       // Build update data
-      const updateData = {
-        factoryName,
-        description,
-        location,
-        productCategories,
-        productionCapacity,
-        certifications,
-        machinery,
-      };
+    const updateData = {
+  factoryName,
+  description,
+  location,
+  productCategories,
+  productionCapacity,
+  certifications,
+  machinery,
+};
+
+if (factoryProducts !== undefined) {
+  updateData.factoryProducts = typeof factoryProducts === 'string'
+    ? JSON.parse(factoryProducts)
+    : factoryProducts;
+}
 
       // If new media files are uploaded, add them
       if (req.files && req.files.length > 0) {
@@ -199,6 +211,19 @@ router.get('/top-deals', async (req, res) => {
   } catch (error) {
     console.error('Top deals error:', error);
     res.status(500).json({ message: "Error", error: error.message });
+  }
+});
+
+// GET factory products
+router.get('/:id/products', async (req, res) => {
+  try {
+    const factory = await FactoryProfile.findById(req.params.id);
+    if (!factory) {
+      return res.status(404).json({ message: "Factory not found" });
+    }
+    res.json({ data: factory.factoryProducts || [] });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 });
 
