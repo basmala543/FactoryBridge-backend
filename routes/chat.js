@@ -97,14 +97,15 @@ factoryProfiles.forEach(p => {
 brandProfiles.forEach(p => {
   profileMap[p.userId.toString()] = p.brandName;
 });
-    let participants = [];
-    try {
-      participants = await User.find({
-        _id: { $in: participantIds.map((id) => {
-          try { return new mongoose.Types.ObjectId(id); } catch { return id; }
-        }) },
-      }).select("_id name companyName profileImage");
-    } catch (_) {}
+    const validIds = participantIds.filter(id => 
+  id !== 'ai' && mongoose.Types.ObjectId.isValid(id)
+);
+
+try {
+  participants = await User.find({
+    _id: { $in: validIds.map(id => new mongoose.Types.ObjectId(id)) },
+  }).select("_id name companyName profileImage");
+} catch (_) {}
 
     const participantMap = {};
     participants.forEach((p) => {
