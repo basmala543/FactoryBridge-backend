@@ -24,7 +24,6 @@ router.post(
         contactInformation,
       } = req.body;
 
-      // التحقق: إذا رفع المستخدم صورة، نأخذ الرابط من Cloudinary، وإلا نأخذ ما أرسله في الـ body
       const logoUrl = req.file ? req.file.path : req.body.logo;
 
       const newBrandProfile = new BrandProfile({
@@ -35,7 +34,7 @@ router.post(
         productCategories,
         industry,
         contactInformation,
-        logo: logoUrl, // تخزين رابط الصورة
+        logo: logoUrl,
       });
 
       await newBrandProfile.save();
@@ -74,29 +73,41 @@ router.put(
   handleUploadError,
   async (req, res) => {
     try {
-      const updateData = { ...req.body };
+      const {
+        brandName,
+        description,
+        location,
+        productCategories,
+        industry,
+        contactInformation,
+      } = req.body;
 
-      // إذا تم رفع ملف جديد، نحدث رابط الصورة
-      if (req.file) {
-        updateData.logo = req.file.path;
-      }
+      const updateData = {};
+      if (brandName) updateData.brandName = brandName;
+      if (description) updateData.description = description;
+      if (location) updateData.location = location;
+      if (productCategories) updateData.productCategories = productCategories;
+      if (industry) updateData.industry = industry;
+      if (contactInformation) updateData.contactInformation = contactInformation;
+      if (req.file) updateData.logo = req.file.path;
 
       const updatedBrandProfile = await BrandProfile.findOneAndUpdate(
         { userId: req.user.userId },
-        updateData,
-        { new: true },
+        { $set: updateData },
+        { new: true, runValidators: true },
       );
 
       if (!updatedBrandProfile)
         return res.status(404).json({ message: "Brand profile not found" });
+
       res.json({
         message: "Brand profile updated successfully",
         data: updatedBrandProfile,
       });
-    }  catch (err) {
-  console.error('Brand profile error:', JSON.stringify(err, null, 2), err.message, err.stack);
-  res.status(500).json({ message: err.message });
-}
+    } catch (err) {
+      console.error("Update error:", err.message, err.stack);
+      res.status(500).json({ message: err.message });
+    }
   },
 );
 
