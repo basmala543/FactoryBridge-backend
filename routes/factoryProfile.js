@@ -227,4 +227,23 @@ router.get("/:id/products", async (req, res) => {
   }
 });
 
+// ================== GET FACTORY BY ID ==================
+router.get("/:id", async (req, res) => {
+  try {
+    const factory = await FactoryProfile.findById(req.params.id);
+    if (!factory) {
+      return res.status(404).json({ message: "Factory not found" });
+    }
+    res.json({
+      message: "Factory fetched successfully",
+      data: factory,
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+
+
+
 module.exports = router;
