@@ -71,18 +71,12 @@ const userId = req.user.userId;
     ]);
 
     // جيب بيانات المشاركين (اسم وصورة) من users collection
-    const User = mongoose.model(
-      "User",
-      new mongoose.Schema(
-        {
-          name: String,
-          email: String,
-          profileImage: String,
-          companyName: String,
-        },
-        { strict: false }
-      )
-    );
+const User = mongoose.models.User || mongoose.model("User", new mongoose.Schema({
+  name: String,
+  email: String,
+  profileImage: String,
+  companyName: String,
+}, { strict: false }));
 
     const participantIds = conversations.map((c) => c.participantId);
 
