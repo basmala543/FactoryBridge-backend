@@ -25,36 +25,29 @@ router.post(
         machinery,
       } = req.body;
 
-      // Get media URLs from uploaded files
       const mediaUrls = req.files ? req.files.map((file) => file.path) : [];
 
-    const newProfile = new FactoryProfile({
-  userId: req.user.userId,
-  factoryName,
-  description,
-  location,
-  productCategories,
-  productionCapacity,
-  certifications,
-  machinery,
-  media: mediaUrls,
-  factoryProducts: req.body.factoryProducts
-    ? typeof req.body.factoryProducts === 'string'
-      ? JSON.parse(req.body.factoryProducts)
-      : req.body.factoryProducts
-    : [],
-});
+      const newProfile = new FactoryProfile({
+        userId: req.user.userId,
+        factoryName,
+        description,
+        location,
+        productCategories,
+        productionCapacity,
+        certifications,
+        machinery,
+        media: mediaUrls,
+        factoryProducts: req.body.factoryProducts
+          ? typeof req.body.factoryProducts === 'string'
+            ? JSON.parse(req.body.factoryProducts)
+            : req.body.factoryProducts
+          : [],
+      });
 
       await newProfile.save();
-
-      res.json({
-        message: "Factory profile created successfully",
-        data: newProfile,
-      });
+      res.json({ message: "Factory profile created successfully", data: newProfile });
     } catch (err) {
-      res.status(500).json({
-        message: err.message,
-      });
+      res.status(500).json({ message: err.message });
     }
   },
 );
@@ -62,24 +55,13 @@ router.post(
 // ================== GET FACTORY PROFILE ==================
 router.get("/profile", authMiddleware, async (req, res) => {
   try {
-    const factoryProfile = await FactoryProfile.findOne({
-      userId: req.user.userId,
-    });
-
+    const factoryProfile = await FactoryProfile.findOne({ userId: req.user.userId });
     if (!factoryProfile) {
-      return res.status(404).json({
-        message: "Factory profile not found",
-      });
+      return res.status(404).json({ message: "Factory profile not found" });
     }
-
-    res.json({
-      message: "Factory profile fetched successfully",
-      data: factoryProfile,
-    });
+    res.json({ message: "Factory profile fetched successfully", data: factoryProfile });
   } catch (err) {
-    res.status(500).json({
-      message: err.message,
-    });
+    res.status(500).json({ message: err.message });
   }
 });
 
@@ -91,136 +73,111 @@ router.put(
   handleUploadError,
   async (req, res) => {
     try {
-     const {
-  factoryName,
-  description,
-  location,
-  productCategories,
-  productionCapacity,
-  certifications,
-  machinery,
-  factoryProducts,
-} = req.body;
+      const {
+        factoryName,
+        description,
+        location,
+        productCategories,
+        productionCapacity,
+        certifications,
+        machinery,
+        factoryProducts,
+      } = req.body;
 
-      // Build update data
-    const updateData = {
-  factoryName,
-  description,
-  location,
-  productCategories,
-  productionCapacity,
-  certifications,
-  machinery,
-};
+      const updateData = {};
+      if (factoryName) updateData.factoryName = factoryName;
+      if (description) updateData.description = description;
+      if (location) updateData.location = location;
+      if (productCategories) updateData.productCategories = productCategories;
+      if (productionCapacity) updateData.productionCapacity = productionCapacity;
+      if (certifications) updateData.certifications = certifications;
+      if (machinery) updateData.machinery = machinery;
 
-if (factoryProducts !== undefined) {
-  updateData.factoryProducts = typeof factoryProducts === 'string'
-    ? JSON.parse(factoryProducts)
-    : factoryProducts;
-}
+      if (factoryProducts !== undefined) {
+        updateData.factoryProducts = typeof factoryProducts === 'string'
+          ? JSON.parse(factoryProducts)
+          : factoryProducts;
+      }
 
-      // If new media files are uploaded, add them
       if (req.files && req.files.length > 0) {
         updateData.media = req.files.map((file) => file.path);
       }
 
       const updatedFactoryProfile = await FactoryProfile.findOneAndUpdate(
-        {
-          userId: req.user.userId,
-        },
-        updateData,
-        {
-          new: true,
-        },
+        { userId: req.user.userId },
+        { $set: updateData },
+        { new: true, runValidators: true },
       );
 
       if (!updatedFactoryProfile) {
-        return res.status(404).json({
-          message: "Factory profile not found",
-        });
+        return res.status(404).json({ message: "Factory profile not found" });
       }
 
-      res.json({
-        message: "Factory profile updated successfully",
-        data: updatedFactoryProfile,
-      });
+      res.json({ message: "Factory profile updated successfully", data: updatedFactoryProfile });
     } catch (err) {
-      res.status(500).json({
-        message: err.message,
-      });
+      console.error("Factory update error:", err.message, err.stack);
+      res.status(500).json({ message: err.message });
     }
   },
 );
 
-// search bar in brand home
-
+// ================== SEARCH ==================
 router.get('/search-factories', async (req, res) => {
-    try {
-        const searchTerm = req.query.q;
-        
-        const results = await FactoryProfile.find({
-            $or: [
-                { factoryName: { $regex: searchTerm, $options: 'i' } },
-                { productCategories: { $regex: searchTerm, $options: 'i' } }, // ✅ الاسم الصح
-                { description: { $regex: searchTerm, $options: 'i' } },
-                { location: { $regex: searchTerm, $options: 'i' } },
-            ]
-        });
-        
-        res.status(200).json(results);
-    } catch (error) {
-        res.status(500).json({ message: "خطأ في عملية البحث", error });
-    }
+  try {
+    const searchTerm = req.query.q;
+    const results = await FactoryProfile.find({
+      $or: [
+        { factoryName: { $regex: searchTerm, $options: 'i' } },
+        { productCategories: { $regex: searchTerm, $options: 'i' } },
+        { description: { $regex: searchTerm, $options: 'i' } },
+        { location: { $regex: searchTerm, $options: 'i' } },
+      ]
+    });
+    res.status(200).json(results);
+  } catch (error) {
+    res.status(500).json({ message: "خطأ في عملية البحث", error });
+  }
 });
 
-// category filter in brand home
+// ================== BY CATEGORY ==================
 router.get('/by-category', async (req, res) => {
-    try {
-        const category = req.query.category;
-
-        if (!category) {
-            return res.status(400).json({ message: "Category is required" });
-        }
-
-        const results = await FactoryProfile.find({
-            productCategories: { $regex: category, $options: 'i' }
-        });
-
-        res.status(200).json(results);
-    } catch (error) {
-        res.status(500).json({ message: "خطأ في جلب المصانع", error });
-    }
+  try {
+    const category = req.query.category;
+    if (!category) return res.status(400).json({ message: "Category is required" });
+    const results = await FactoryProfile.find({
+      productCategories: { $regex: category, $options: 'i' }
+    });
+    res.status(200).json(results);
+  } catch (error) {
+    res.status(500).json({ message: "خطأ في جلب المصانع", error });
+  }
 });
+
+// ================== RECOMMENDED ==================
 router.get('/recommended', async (req, res) => {
   try {
-    const factories = await FactoryProfile.find()
-      .sort({ createdAt: -1 })
-      .limit(10);
+    const factories = await FactoryProfile.find().sort({ createdAt: -1 }).limit(10);
     res.status(200).json(factories);
   } catch (error) {
-    console.error('Recommended error:', error);
     res.status(500).json({ message: "Error", error: error.message });
   }
 });
 
+// ================== TOP DEALS ==================
 router.get('/top-deals', async (req, res) => {
   try {
-    const factories = await FactoryProfile.find({ isTopDeal: true })
-      .limit(10);
+    const factories = await FactoryProfile.find({ isTopDeal: true }).limit(10);
     res.status(200).json(factories);
   } catch (error) {
-    console.error('Top deals error:', error);
     res.status(500).json({ message: "Error", error: error.message });
   }
 });
 
-// GET factory products
+// ================== FACTORY PRODUCTS ==================
 router.get('/:id/products', async (req, res) => {
   try {
     const factory = await FactoryProfile.findById(req.params.id);
-    if (!factory) {
-      return res.status(404).json({ message: "Factory not found" });
-    }
+    if (!factory) return res.status(404).json({ message: "Factory not found" });
     res.json({ data: factory.factoryProducts || [] });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -228,6 +185,3 @@ router.get('/:id/products', async (req, res) => {
 });
 
 module.exports = router;
-
-
-
