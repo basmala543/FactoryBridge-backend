@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const Order = require('../models/Order');
+const Order = require('../models/Orders');
 const FactoryProfile = require('../models/factoryProfile');
 const Notification = require('../models/Notification');
 const auth = require('../middleware/authMiddleware');
