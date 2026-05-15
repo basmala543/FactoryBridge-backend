@@ -215,3 +215,7 @@ mongoose
   .catch((err) => {
     console.log("❌ Mongo Connection Error:", err);
   });
+
+  process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled Rejection:', JSON.stringify(reason, Object.getOwnPropertyNames(reason)));
+});
