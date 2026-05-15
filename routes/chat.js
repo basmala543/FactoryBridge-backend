@@ -79,7 +79,24 @@ const User = mongoose.models.User || mongoose.model("User", new mongoose.Schema(
 }, { strict: false }));
 
     const participantIds = conversations.map((c) => c.participantId);
+const FactoryProfile = require('../models/factoryProfile');
+const BrandProfile = require('../models/brandProfile');
 
+const factoryProfiles = await FactoryProfile.find({
+  userId: { $in: participantIds }
+}).select('userId factoryName');
+
+const brandProfiles = await BrandProfile.find({
+  userId: { $in: participantIds }
+}).select('userId brandName');
+
+const profileMap = {};
+factoryProfiles.forEach(p => {
+  profileMap[p.userId.toString()] = p.factoryName;
+});
+brandProfiles.forEach(p => {
+  profileMap[p.userId.toString()] = p.brandName;
+});
     let participants = [];
     try {
       participants = await User.find({
@@ -96,13 +113,10 @@ const User = mongoose.models.User || mongoose.model("User", new mongoose.Schema(
 
     const result = conversations.map((conv) => {
       const participant = participantMap[conv.participantId] || null;
-      const name =
-        participant?.companyName ||
-        participant?.name ||
-        conv.participantId === "ai"
-          ? "FactoryBridge Support"
-          : "Unknown";
 
+const name = conv.participantId === "ai"
+  ? "FactoryBridge Support"
+  : (profileMap[conv.participantId] || participant?.companyName || participant?.name || "Unknown");
       return {
         id: conv._id,
         title: name,
