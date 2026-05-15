@@ -4,6 +4,7 @@ const factoryProfileSchema = new mongoose.Schema(
   {
     userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     factoryName: { type: String, required: true },
+    logo: { type: String, default: "" },
     description: { type: String, required: true },
     location: { type: String, required: true },
     productCategories: { type: String, required: true },

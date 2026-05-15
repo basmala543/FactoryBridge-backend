@@ -66,41 +66,38 @@ router.get("/profile", authMiddleware, async (req, res) => {
 });
 
 // ================== UPDATE FACTORY PROFILE ==================
+// ================== UPDATE FACTORY PROFILE ==================
 router.put(
   "/profile",
   authMiddleware,
-  uploadFactoryMedia.array("media", 10),
+  // التعديل هنا: هنخليه يستقبل حقل للصور وحقل مخصوص للوجو
+  uploadFactoryMedia.fields([
+    { name: 'media', maxCount: 10 },
+    { name: 'logo', maxCount: 1 }
+  ]),
   handleUploadError,
   async (req, res) => {
     try {
       const {
         factoryName,
         description,
-        location,
-        productCategories,
-        productionCapacity,
-        certifications,
-        machinery,
-        factoryProducts,
+        // ... باقي الحقول اللي عندك ...
       } = req.body;
 
       const updateData = {};
+      // ... الكود بتاعك زي ما هو لتحديث النصوص ...
       if (factoryName) updateData.factoryName = factoryName;
       if (description) updateData.description = description;
-      if (location) updateData.location = location;
-      if (productCategories) updateData.productCategories = productCategories;
-      if (productionCapacity) updateData.productionCapacity = productionCapacity;
-      if (certifications) updateData.certifications = certifications;
-      if (machinery) updateData.machinery = machinery;
+      // ... الخ
 
-      if (factoryProducts !== undefined) {
-        updateData.factoryProducts = typeof factoryProducts === 'string'
-          ? JSON.parse(factoryProducts)
-          : factoryProducts;
+      // --- الجزء الجديد الخاص باللوجو ---
+      if (req.files && req.files['logo']) {
+        updateData.logo = req.files['logo'][0].path; // حفظ رابط اللوجو من كلوديناري
       }
 
-      if (req.files && req.files.length > 0) {
-        updateData.media = req.files.map((file) => file.path);
+      // --- تحديث الصور العامة (Media) ---
+      if (req.files && req.files['media']) {
+        updateData.media = req.files['media'].map((file) => file.path);
       }
 
       const updatedFactoryProfile = await FactoryProfile.findOneAndUpdate(
@@ -115,7 +112,6 @@ router.put(
 
       res.json({ message: "Factory profile updated successfully", data: updatedFactoryProfile });
     } catch (err) {
-      console.error("Factory update error:", err.message, err.stack);
       res.status(500).json({ message: err.message });
     }
   },
