@@ -93,9 +93,10 @@ router.put(
         message: "Brand profile updated successfully",
         data: updatedBrandProfile,
       });
-    } catch (err) {
-      res.status(500).json({ message: err.message });
-    }
+    }  catch (err) {
+  console.error('Brand profile error:', JSON.stringify(err, null, 2), err.message, err.stack);
+  res.status(500).json({ message: err.message });
+}
   },
 );
 
