@@ -10,7 +10,7 @@ const authMiddleware = require("../middleware/authMiddleware");
 // ============================================================
 router.get("/", authMiddleware, async (req, res) => {
   try {
-    const userId = req.user.id;
+const userId = req.user.userId;
 
     // جيب آخر رسالة لكل محادثة فريدة
     const conversations = await Message.aggregate([
@@ -133,7 +133,7 @@ router.get("/", authMiddleware, async (req, res) => {
 // ============================================================
 router.get("/:chatId/messages", authMiddleware, async (req, res) => {
   try {
-    const userId = req.user.id;
+const userId = req.user.userId;
     const { chatId } = req.params;
 
     // chatId = "id1_id2" — استخرج الطرفين
@@ -180,7 +180,7 @@ router.get("/:chatId/messages", authMiddleware, async (req, res) => {
 // ============================================================
 router.post("/:chatId/messages", authMiddleware, async (req, res) => {
   try {
-    const userId = req.user.id;
+const userId = req.user.userId;
     const { chatId } = req.params;
     const { message } = req.body;
 
