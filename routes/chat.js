@@ -93,10 +93,9 @@ router.get("/", authMiddleware, async (req, res) => {
     participants.forEach((p) => {
       participantMap[p._id.toString()] = p;
     });
-const result = conversations
-  .filter(conv => conv.participantId !== 'ai') // ← أضيفي السطر ده
-  .map((conv) => {
-    // ... باقي الكود
+
+    const result = conversations.map((conv) => {
+      const participant = participantMap[conv.participantId] || null;
       const name = conv.participantId === "ai"
         ? "FactoryBridge Support"
         : (profileMap[conv.participantId] || participant?.companyName || participant?.name || "Unknown");
@@ -179,25 +178,6 @@ router.post("/:chatId/messages", authMiddleware, async (req, res) => {
     });
   } catch (err) {
     console.error("❌ POST /api/chats/:chatId/messages error:", err);
-    return res.status(500).json({ message: "Server error", error: err.message });
-  }
-});
-router.post("/:chatId/read", authMiddleware, async (req, res) => {
-  try {
-    const userId = req.user.userId;
-    const { chatId } = req.params;
-    const parts = chatId.split("_");
-    if (parts.length < 2) return res.status(400).json({ message: "Invalid chatId" });
-    const [idA, idB] = parts;
-    if (userId !== idA && userId !== idB) return res.status(403).json({ message: "Access denied" });
-
-    await Message.updateMany(
-      { receiverId: userId, senderId: userId === idA ? idB : idA, isRead: false },
-      { $set: { isRead: true } }
-    );
-
-    return res.status(200).json({ message: "Marked as read" });
-  } catch (err) {
     return res.status(500).json({ message: "Server error", error: err.message });
   }
 });
