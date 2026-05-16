@@ -93,9 +93,10 @@ router.get("/", authMiddleware, async (req, res) => {
     participants.forEach((p) => {
       participantMap[p._id.toString()] = p;
     });
-
-    const result = conversations.map((conv) => {
-      const participant = participantMap[conv.participantId] || null;
+const result = conversations
+  .filter(conv => conv.participantId !== 'ai') // ← أضيفي السطر ده
+  .map((conv) => {
+    // ... باقي الكود
       const name = conv.participantId === "ai"
         ? "FactoryBridge Support"
         : (profileMap[conv.participantId] || participant?.companyName || participant?.name || "Unknown");
