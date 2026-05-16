@@ -198,6 +198,11 @@ mongoose
   .connect(MONGO_URI)
   .then(() => {
     console.log("✅ MongoDB Connected Successfully");
+      // ← أضيفي السطرين دول هنا
+    Message.updateMany({ isRead: { $exists: false } }, { $set: { isRead: true } })
+      .then(() => console.log('✅ Old messages marked as read'))
+      .catch(console.error);
+
 
     const PORT = process.env.PORT || 3000;
 
