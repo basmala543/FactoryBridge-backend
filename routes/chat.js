@@ -181,5 +181,24 @@ router.post("/:chatId/messages", authMiddleware, async (req, res) => {
     return res.status(500).json({ message: "Server error", error: err.message });
   }
 });
+router.post("/:chatId/read", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { chatId } = req.params;
+    const parts = chatId.split("_");
+    if (parts.length < 2) return res.status(400).json({ message: "Invalid chatId" });
+    const [idA, idB] = parts;
+    if (userId !== idA && userId !== idB) return res.status(403).json({ message: "Access denied" });
+
+    await Message.updateMany(
+      { receiverId: userId, senderId: userId === idA ? idB : idA, isRead: false },
+      { $set: { isRead: true } }
+    );
+
+    return res.status(200).json({ message: "Marked as read" });
+  } catch (err) {
+    return res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
 
 module.exports = router;
