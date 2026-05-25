@@ -41,6 +41,8 @@ await Notification.create({
     selectedSize: selectedSize,
     selectedColor: selectedColor,
     notes: notes,
+    brandId: req.user.userId,      // ✅ أضيفي دي
+    brandName: req.user.name,      // ✅ وأضيفي دي
   },
 });
 
