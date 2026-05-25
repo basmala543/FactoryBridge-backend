@@ -1,8 +1,8 @@
+const mongoose = require('mongoose'); // ✅ أضيفي هذا السطر
 const SampleRequest = require('../models/SampleRequest');
 const Notification = require('../models/Notification');
 const FactoryProfile = require('../models/factoryProfile');
 const BrandProfile = require('../models/brandProfile'); // ✅ أضف هذا
-
 
 exports.createRequest = async (req, res) => {
   try {
@@ -14,15 +14,14 @@ exports.createRequest = async (req, res) => {
     }
     const factoryUserId = factoryProfile.userId;
 
-    // ✅ جيب اسم البراند
-const brandProfile = await BrandProfile.findOne({ 
-  userId: req.user.userId 
-}) || await BrandProfile.findOne({ 
-  userId: req.user.id 
-});    const brandName = brandProfile?.brandName ?? 'Unknown Brand';
+    // ✅ Convert to ObjectId before query
+    const brandProfile = await BrandProfile.findOne({ 
+      userId: new mongoose.Types.ObjectId(req.user.userId || req.user.id)
+    });
+    const brandName = brandProfile?.brandName ?? 'Unknown Brand';
 
-console.log('brandProfile found:', brandProfile);
-console.log('brandName:', brandName);
+    console.log('brandProfile found:', brandProfile);
+    console.log('brandName:', brandName);
 
     const request = await SampleRequest.create({
       brand: req.user.userId,
@@ -34,33 +33,38 @@ console.log('brandName:', brandName);
 
     await Notification.create({
       user: factoryUserId,
-      title: 'New Order Received!', // ✅ تأكدي إنه نفس الـ title في Flutter
+      title: 'New Order Received!',
       message: `You received a new sample request for "${productName}" (${quantity} units).`,
       type: 'system',
       data: {
         requestId: request._id,
         productName,
         quantity,
-        brandName, // ✅ هذا اللي كان ناقص
+        brandName,
       },
     });
-
-
 
     res.status(201).json({ data: request });
   } catch (error) {
     res.status(500).json({ message: "Error creating request", error });
   }
 };
-
 exports.getFactoryRequests = async (req, res) => {
   try {
     const requests = await SampleRequest.find({ 
       factory: req.user.userId 
-    })
-    .populate('brand', 'username') // ✅ أضيفي هذا
-    .sort({ createdAt: -1 });
-    res.json({ data: requests });
+    }).sort({ createdAt: -1 });
+
+    // ✅ أضيفي هذا
+    const enriched = await Promise.all(requests.map(async (req) => {
+      const brandProfile = await BrandProfile.findOne({ userId: req.brand });
+      return {
+        ...req.toObject(),
+        brandName: brandProfile?.brandName ?? null,
+      };
+    }));
+
+    res.json({ data: enriched });
   } catch (error) {
     res.status(500).json({ message: "Error fetching requests", error });
   }
