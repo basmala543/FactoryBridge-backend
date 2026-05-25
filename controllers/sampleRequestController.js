@@ -57,7 +57,9 @@ exports.getFactoryRequests = async (req, res) => {
   try {
     const requests = await SampleRequest.find({ 
       factory: req.user.userId 
-    }).sort({ createdAt: -1 });
+    })
+    .populate('brand', 'username') // ✅ أضيفي هذا
+    .sort({ createdAt: -1 });
     res.json({ data: requests });
   } catch (error) {
     res.status(500).json({ message: "Error fetching requests", error });
