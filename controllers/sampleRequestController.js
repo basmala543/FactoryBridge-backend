@@ -1,6 +1,8 @@
 const SampleRequest = require('../models/SampleRequest');
 const Notification = require('../models/Notification');
 const FactoryProfile = require('../models/factoryProfile');
+const BrandProfile = require('../models/brandProfile'); // ✅ أضف هذا
+
 
 exports.createRequest = async (req, res) => {
   try {
@@ -12,6 +14,10 @@ exports.createRequest = async (req, res) => {
     }
     const factoryUserId = factoryProfile.userId;
 
+    // ✅ جيب اسم البراند
+    const brandProfile = await BrandProfile.findOne({ userId: req.user.userId });
+    const brandName = brandProfile?.brandName ?? 'Unknown Brand';
+
     const request = await SampleRequest.create({
       brand: req.user.userId,
       factory: factoryId,
@@ -19,18 +25,21 @@ exports.createRequest = async (req, res) => {
       quantity,
       notes,
     });
-// بعد ✅
-await Notification.create({
-  user: factoryUserId,
-  title: 'New Sample Request',
-  message: `You received a new sample request for "${productName}" (${quantity} units).`,
-  type: 'system',
-  data: {
-    requestId: request._id,
-    productName,
-    quantity,
-  },
-});
+
+    await Notification.create({
+      user: factoryUserId,
+      title: 'New Order Received!', // ✅ تأكدي إنه نفس الـ title في Flutter
+      message: `You received a new sample request for "${productName}" (${quantity} units).`,
+      type: 'system',
+      data: {
+        requestId: request._id,
+        productName,
+        quantity,
+        brandName, // ✅ هذا اللي كان ناقص
+      },
+    });
+
+
 
     res.status(201).json({ data: request });
   } catch (error) {
