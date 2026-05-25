@@ -15,8 +15,11 @@ exports.createRequest = async (req, res) => {
     const factoryUserId = factoryProfile.userId;
 
     // ✅ جيب اسم البراند
-    const brandProfile = await BrandProfile.findOne({ userId: req.user.userId });
-    const brandName = brandProfile?.brandName ?? 'Unknown Brand';
+const brandProfile = await BrandProfile.findOne({ 
+  userId: req.user.userId 
+}) || await BrandProfile.findOne({ 
+  userId: req.user.id 
+});    const brandName = brandProfile?.brandName ?? 'Unknown Brand';
 
     const request = await SampleRequest.create({
       brand: req.user.userId,
