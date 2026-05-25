@@ -21,6 +21,9 @@ const brandProfile = await BrandProfile.findOne({
   userId: req.user.id 
 });    const brandName = brandProfile?.brandName ?? 'Unknown Brand';
 
+console.log('brandProfile found:', brandProfile);
+console.log('brandName:', brandName);
+
     const request = await SampleRequest.create({
       brand: req.user.userId,
       factory: factoryId,
