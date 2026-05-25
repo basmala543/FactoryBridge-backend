@@ -28,12 +28,21 @@ router.post('/create', auth, async (req, res) => {
     });
 
     // notification للـ factory
-    await Notification.create({
-      user: factoryProfile.userId,
-      title: 'New Order Received!',
-      message: `You received a new order for "${productName}" (${quantity} units).`,
-      type: 'order',
-    });
+ // ✅ كده
+await Notification.create({
+  user: factoryProfile.userId,
+  title: 'New Order Received!',
+  message: `You received a new order for "${productName}" (${quantity} units).`,
+  type: 'order',
+  data: {
+    requestId: order._id,
+    productName: productName,
+    quantity: quantity,
+    selectedSize: selectedSize,
+    selectedColor: selectedColor,
+    notes: notes,
+  },
+});
 
     res.status(201).json({ data: order });
   } catch (err) {
