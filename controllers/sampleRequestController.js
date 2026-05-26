@@ -82,24 +82,37 @@ exports.updateStatus = async (req, res) => {
       return res.status(404).json({ message: "Request not found" });
     }
 
+    // ✅ جيبي بيانات الـ factory
+    const factoryProfile = await FactoryProfile.findOne({ userId: req.user.userId });
+    const factoryName = factoryProfile?.factoryName || 'Factory';
+    const factoryLogo = factoryProfile?.logo || null;
+
     if (status === 'accepted') {
       await Notification.create({
-        user: request.brand, // ✅ ObjectId مباشرة
+        user: request.brand,
         title: 'Sample Request Accepted!',
         message: `Your sample request for "${request.productName}" has been accepted.`,
         type: 'system',
+        data: {
+          factoryName,      // ✅
+          factoryLogo,      // ✅
+        },
       });
     } else if (status === 'rejected') {
       await Notification.create({
-        user: request.brand, // ✅ نفس الشيء
+        user: request.brand,
         title: 'Sample Request Update',
         message: `Your sample request for "${request.productName}" was not accepted.`,
         type: 'system',
+        data: {
+          factoryName,      // ✅
+          factoryLogo,      // ✅
+        },
       });
     }
 
     res.json({ data: request });
   } catch (error) {
-    res.status(500).json({ message: "Error updating request", error });
+    res.status(500).json({ message: "Error updating status", error });
   }
 };
