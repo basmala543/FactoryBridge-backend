@@ -4,6 +4,7 @@ const Notification = require('../models/Notification');
 const FactoryProfile = require('../models/factoryProfile');
 const BrandProfile = require('../models/brandProfile'); // ✅ أضف هذا
 
+
 exports.createRequest = async (req, res) => {
   try {
     const { factoryId, productName, quantity, notes } = req.body;
@@ -14,14 +15,9 @@ exports.createRequest = async (req, res) => {
     }
     const factoryUserId = factoryProfile.userId;
 
-    // ✅ Convert to ObjectId before query
-    const brandProfile = await BrandProfile.findOne({ 
-      userId: new mongoose.Types.ObjectId(req.user.userId || req.user.id)
-    });
-    const brandName = brandProfile?.brandName ?? 'Unknown Brand';
-
-    console.log('brandProfile found:', brandProfile);
-    console.log('brandName:', brandName);
+    // ✅ جيبي اسم البراند
+    const brandProfile = await BrandProfile.findOne({ userId: req.user.userId });
+    const brandName = brandProfile?.brandName || brandProfile?.name || 'A Brand';
 
     const request = await SampleRequest.create({
       brand: req.user.userId,
@@ -33,14 +29,17 @@ exports.createRequest = async (req, res) => {
 
     await Notification.create({
       user: factoryUserId,
-      title: 'New Order Received!',
+      title: 'New Sample Request',
       message: `You received a new sample request for "${productName}" (${quantity} units).`,
       type: 'system',
       data: {
         requestId: request._id,
         productName,
         quantity,
-        brandName,
+        brandName,      // ✅ أضيفي دي
+        brandId: req.user.userId, // ✅ وده
+       brandLogo: brandProfile?.logo || null, // ✅ أضيفي دي
+
       },
     });
 
@@ -85,15 +84,14 @@ exports.updateStatus = async (req, res) => {
 
     if (status === 'accepted') {
       await Notification.create({
-       // لازم تعملي
-user: request.brand.toString(),
+        user: request.brand, // ✅ ObjectId مباشرة
         title: 'Sample Request Accepted!',
         message: `Your sample request for "${request.productName}" has been accepted.`,
         type: 'system',
       });
     } else if (status === 'rejected') {
       await Notification.create({
-        user: request.brand,
+        user: request.brand, // ✅ نفس الشيء
         title: 'Sample Request Update',
         message: `Your sample request for "${request.productName}" was not accepted.`,
         type: 'system',
