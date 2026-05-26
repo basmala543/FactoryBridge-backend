@@ -85,7 +85,8 @@ exports.updateStatus = async (req, res) => {
 
     if (status === 'accepted') {
       await Notification.create({
-        user: request.brand,
+       // لازم تعملي
+user: request.brand.toString(),
         title: 'Sample Request Accepted!',
         message: `Your sample request for "${request.productName}" has been accepted.`,
         type: 'system',

@@ -3,11 +3,14 @@ const router = express.Router();
 const ctrl = require('../controllers/notificationController');
 const auth = require('../middleware/authMiddleware');
 
-router.get('/', auth, ctrl.getNotifications);
+// ✅ Static أولاً
+router.get('/unread-count', auth, ctrl.getUnreadCount);
 router.put('/mark-all-read', auth, ctrl.markAllAsRead);
+router.get('/', auth, ctrl.getNotifications);
+router.post('/', auth, ctrl.createNotification);
+
+// ✅ Dynamic تانياً
 router.put('/:id/read', auth, ctrl.markAsRead);
 router.delete('/:id', auth, ctrl.deleteNotification);
-router.get('/unread-count', auth, ctrl.getUnreadCount);
-router.post('/', auth, ctrl.createNotification);
 
 module.exports = router;
