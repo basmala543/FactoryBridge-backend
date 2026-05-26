@@ -72,11 +72,11 @@ exports.getFactoryRequests = async (req, res) => {
 exports.updateStatus = async (req, res) => {
   try {
     const { status } = req.body;
-    const request = await SampleRequest.findByIdAndUpdate(
-      req.params.id,
-      { status },
-      { new: true }
-    );
+ const request = await SampleRequest.findOneAndUpdate(
+  { _id: new mongoose.Types.ObjectId(req.params.id.trim()) },
+  { status },
+  { new: true }
+);
 
     if (!request) {
       return res.status(404).json({ message: "Request not found" });
