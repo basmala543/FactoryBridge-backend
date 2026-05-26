@@ -33,7 +33,7 @@ exports.createRequest = async (req, res) => {
       message: `You received a new sample request for "${productName}" (${quantity} units).`,
       type: 'system',
       data: {
-        requestId: request._id,
+  requestId: request._id.toString(), // ✅ كده
         productName,
         quantity,
         brandName,      // ✅ أضيفي دي
