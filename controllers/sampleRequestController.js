@@ -96,6 +96,8 @@ exports.updateStatus = async (req, res) => {
         data: {
           factoryName,      // ✅
           factoryLogo,      // ✅
+          requestId: request._id.toString(),      // ✅ أضيفي دي
+          productName: request.productName,        // ✅ وده
         },
       });
     } else if (status === 'rejected') {
@@ -107,6 +109,8 @@ exports.updateStatus = async (req, res) => {
         data: {
           factoryName,      // ✅
           factoryLogo,      // ✅
+          requestId: request._id.toString(),      // ✅ أضيفي دي
+          productName: request.productName,        // ✅ وده
         },
       });
     }

@@ -8,6 +8,7 @@ type: { type: String, enum: ['order', 'message', 'system', 'review'], default: '
   isRead: { type: Boolean, default: false },
   data: { type: Object },
   createdAt: { type: Date, default: Date.now }
+  
 });
 
 module.exports = mongoose.model('Notification', notificationSchema);
