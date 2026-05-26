@@ -5,7 +5,15 @@ exports.getNotifications = async (req, res) => {
     const notifications = await Notification.find({ user: req.user.userId })
       .sort({ createdAt: -1 })
       .limit(20);
-    res.json({ data: notifications.map(n => ({ ...n.toObject(), id: n._id })) });
+    res.json({ 
+      data: notifications.map(n => {
+        const obj = n.toObject();
+        if (obj.data?.requestId) {
+          obj.data.requestId = obj.data.requestId.toString(); // ✅
+        }
+        return { ...obj, id: n._id.toString() };
+      }) 
+    });
   } catch (error) {
     res.status(500).json({ message: "Error fetching notifications", error });
   }
@@ -62,7 +70,7 @@ exports.createNotification = async (req, res) => {
     });
     res.status(201).json({ 
       message: 'Notification created', 
-      data: { ...notification.toObject(), id: notification._id } 
+      data: { ...notification.toObject(), id: notification._id.toString() } 
     });
   } catch (error) {
     res.status(500).json({ message: 'Error creating notification', error });
