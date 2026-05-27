@@ -2,8 +2,9 @@ const express = require('express');
 const router = express.Router();
 const Order = require('../models/Orders');
 const FactoryProfile = require('../models/factoryProfile');
+const BrandProfile = require('../models/brandProfile'); // ✅
 const Notification = require('../models/Notification');
-const User = require('../models/users'); // ✅ أضيفها فوق
+const User = require('../models/users');
 const auth = require('../middleware/authMiddleware');
 
 // البراند يعمل order
@@ -16,8 +17,8 @@ router.post('/create', auth, async (req, res) => {
       return res.status(404).json({ message: "Factory not found" });
     }
 
-    // ✅ جيب اسم البراند من الـ DB
     const brandUser = await User.findById(req.user.userId);
+    const brandProfile = await BrandProfile.findOne({ userId: req.user.userId }); // ✅
 
     const order = await Order.create({
       brand: req.user.userId,
@@ -44,7 +45,8 @@ router.post('/create', auth, async (req, res) => {
         selectedColor,
         notes,
         brandId: req.user.userId,
-        brandName: brandUser?.name ?? 'Unknown Brand', // ✅
+        brandName: brandUser?.name ?? 'Unknown Brand',
+        brandLogo: brandProfile?.logo ?? '', // ✅
       },
     });
 
@@ -87,9 +89,8 @@ router.put('/:id/status', auth, async (req, res) => {
     await order.save();
 
     const factoryProfile = await FactoryProfile.findOne({ userId: req.user.userId });
-    
-    // ✅ جيب اسم البراند من الـ DB
     const brandUser = await User.findById(order.brand);
+    const brandProfile = await BrandProfile.findOne({ userId: order.brand }); // ✅
 
     await Notification.create({
       user: order.brand,
@@ -105,7 +106,8 @@ router.put('/:id/status', auth, async (req, res) => {
         factoryId: req.user.userId,
         factoryName: factoryProfile?.factoryName ?? '',
         factoryLogo: factoryProfile?.imageUrl ?? '',
-        brandName: brandUser?.name ?? '', // ✅
+        brandName: brandUser?.name ?? '',
+        brandLogo: brandProfile?.logo ?? '', // ✅
       },
     });
 
