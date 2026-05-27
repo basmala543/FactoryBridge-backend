@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Order = require('../models/Orders');
 const FactoryProfile = require('../models/factoryProfile');
-const BrandProfile = require('../models/brandProfile'); // ✅
+const BrandProfile = require('../models/brandProfile');
 const Notification = require('../models/Notification');
 const User = require('../models/users');
 const auth = require('../middleware/authMiddleware');
@@ -18,7 +18,7 @@ router.post('/create', auth, async (req, res) => {
     }
 
     const brandUser = await User.findById(req.user.userId);
-    const brandProfile = await BrandProfile.findOne({ userId: req.user.userId }); // ✅
+    const brandProfile = await BrandProfile.findOne({ userId: req.user.userId });
 
     const order = await Order.create({
       brand: req.user.userId,
@@ -46,7 +46,13 @@ router.post('/create', auth, async (req, res) => {
         notes,
         brandId: req.user.userId,
         brandName: brandUser?.name ?? 'Unknown Brand',
-        brandLogo: brandProfile?.logo ?? '', // ✅
+        brandLogo: brandProfile?.logo ?? '',
+        // ✅ تفاصيل البراند
+        brandDescription: brandProfile?.description ?? '',
+        brandLocation: brandProfile?.location ?? '',
+        brandCategory: brandProfile?.productCategories ?? '',
+        brandIndustry: brandProfile?.industry ?? '',
+        brandContact: brandProfile?.contactInformation ?? '',
       },
     });
 
@@ -90,7 +96,7 @@ router.put('/:id/status', auth, async (req, res) => {
 
     const factoryProfile = await FactoryProfile.findOne({ userId: req.user.userId });
     const brandUser = await User.findById(order.brand);
-    const brandProfile = await BrandProfile.findOne({ userId: order.brand }); // ✅
+    const brandProfile = await BrandProfile.findOne({ userId: order.brand });
 
     await Notification.create({
       user: order.brand,
@@ -107,7 +113,12 @@ router.put('/:id/status', auth, async (req, res) => {
         factoryName: factoryProfile?.factoryName ?? '',
         factoryLogo: factoryProfile?.imageUrl ?? '',
         brandName: brandUser?.name ?? '',
-        brandLogo: brandProfile?.logo ?? '', // ✅
+        brandLogo: brandProfile?.logo ?? '',
+        brandDescription: brandProfile?.description ?? '',
+        brandLocation: brandProfile?.location ?? '',
+        brandCategory: brandProfile?.productCategories ?? '',
+        brandIndustry: brandProfile?.industry ?? '',
+        brandContact: brandProfile?.contactInformation ?? '',
       },
     });
 
