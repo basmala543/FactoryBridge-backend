@@ -72,5 +72,41 @@ router.get('/:id', auth, async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
+// المصنع يقبل أو يرفض الأوردر
+router.put('/:id/status', auth, async (req, res) => {
+  try {
+    const { status } = req.body; // 'accepted' or 'rejected'
+    
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: "Order not found" });
+
+    order.status = status;
+    await order.save();
+
+    // ابعت notification للبراند
+    const factoryProfile = await FactoryProfile.findOne({ userId: req.user.userId });
+    
+    await Notification.create({
+      user: order.brand,
+      title: status === 'accepted' ? 'Order Accepted!' : 'Order Declined',
+      message: status === 'accepted'
+        ? `Your order for "${order.productName}" has been accepted by the factory.`
+        : `Your order for "${order.productName}" was declined by the factory.`,
+      type: 'order',
+      data: {
+        orderId: order._id,
+        productName: order.productName,
+        status: status,
+        factoryId: req.user.userId,
+        factoryName: factoryProfile?.factoryName ?? '',
+        factoryLogo: factoryProfile?.imageUrl ?? '',
+      },
+    });
+
+    res.json({ message: `Order ${status}`, data: order });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 
 module.exports = router;
