@@ -77,6 +77,8 @@ exports.updateStatus = async (req, res) => {
   { status },
   { new: true }
 );
+console.log('Looking for ID:', req.params.id);
+console.log('Request found:', request);
 
     if (!request) {
       return res.status(404).json({ message: "Request not found" });
