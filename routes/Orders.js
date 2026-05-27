@@ -87,6 +87,9 @@ router.put('/:id/status', auth, async (req, res) => {
     await order.save();
 
     const factoryProfile = await FactoryProfile.findOne({ userId: req.user.userId });
+    
+    // ✅ جيب اسم البراند من الـ DB
+    const brandUser = await User.findById(order.brand);
 
     await Notification.create({
       user: order.brand,
@@ -102,6 +105,7 @@ router.put('/:id/status', auth, async (req, res) => {
         factoryId: req.user.userId,
         factoryName: factoryProfile?.factoryName ?? '',
         factoryLogo: factoryProfile?.imageUrl ?? '',
+        brandName: brandUser?.name ?? '', // ✅
       },
     });
 
