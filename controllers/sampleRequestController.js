@@ -21,7 +21,7 @@ exports.createRequest = async (req, res) => {
 
     const request = await SampleRequest.create({
       brand: req.user.userId,
-      factory: factoryId,
+        factory: factoryProfile.userId,  // ✅ استخدمي userId مش factoryId
       productName,
       quantity,
       notes,
