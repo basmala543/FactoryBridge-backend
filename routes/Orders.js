@@ -3,6 +3,7 @@ const router = express.Router();
 const Order = require('../models/Orders');
 const FactoryProfile = require('../models/factoryProfile');
 const Notification = require('../models/Notification');
+const User = require('../models/users'); // ✅ أضيفها فوق
 const auth = require('../middleware/authMiddleware');
 
 // البراند يعمل order
@@ -14,6 +15,9 @@ router.post('/create', auth, async (req, res) => {
     if (!factoryProfile) {
       return res.status(404).json({ message: "Factory not found" });
     }
+
+    // ✅ جيب اسم البراند من الـ DB
+    const brandUser = await User.findById(req.user.userId);
 
     const order = await Order.create({
       brand: req.user.userId,
@@ -27,24 +31,22 @@ router.post('/create', auth, async (req, res) => {
       productData,
     });
 
-    // notification للـ factory
- // ✅ كده
-await Notification.create({
-  user: factoryProfile.userId,
-  title: 'New Order Received!',
-  message: `You received a new order for "${productName}" (${quantity} units).`,
-  type: 'order',
-  data: {
-    requestId: order._id,
-    productName: productName,
-    quantity: quantity,
-    selectedSize: selectedSize,
-    selectedColor: selectedColor,
-    notes: notes,
-    brandId: req.user.userId,      // ✅ أضيفي دي
-    brandName: req.user.name,      // ✅ وأضيفي دي
-  },
-});
+    await Notification.create({
+      user: factoryProfile.userId,
+      title: 'New Order Received!',
+      message: `You received a new order for "${productName}" (${quantity} units).`,
+      type: 'order',
+      data: {
+        requestId: order._id,
+        productName,
+        quantity,
+        selectedSize,
+        selectedColor,
+        notes,
+        brandId: req.user.userId,
+        brandName: brandUser?.name ?? 'Unknown Brand', // ✅
+      },
+    });
 
     res.status(201).json({ data: order });
   } catch (err) {
@@ -72,20 +74,20 @@ router.get('/:id', auth, async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
+
 // المصنع يقبل أو يرفض الأوردر
 router.put('/:id/status', auth, async (req, res) => {
   try {
-    const { status } = req.body; // 'accepted' or 'rejected'
-    
+    const { status } = req.body;
+
     const order = await Order.findById(req.params.id);
     if (!order) return res.status(404).json({ message: "Order not found" });
 
     order.status = status;
     await order.save();
 
-    // ابعت notification للبراند
     const factoryProfile = await FactoryProfile.findOne({ userId: req.user.userId });
-    
+
     await Notification.create({
       user: order.brand,
       title: status === 'accepted' ? 'Order Accepted!' : 'Order Declined',
@@ -96,7 +98,7 @@ router.put('/:id/status', auth, async (req, res) => {
       data: {
         orderId: order._id,
         productName: order.productName,
-        status: status,
+        status,
         factoryId: req.user.userId,
         factoryName: factoryProfile?.factoryName ?? '',
         factoryLogo: factoryProfile?.imageUrl ?? '',
