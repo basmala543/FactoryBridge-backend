@@ -132,4 +132,13 @@ router.put('/:id/status', auth, async (req, res) => {
   }
 });
 
+router.get('/factory/:factoryId/products', auth, async (req, res) => {
+  try {
+    const factory = await FactoryProfile.findById(req.params.factoryId);
+    if (!factory) return res.status(404).json({ message: "Factory not found" });
+    res.json({ data: factory.factoryProducts || [] });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 module.exports = router;
