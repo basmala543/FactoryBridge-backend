@@ -34,10 +34,11 @@ router.post('/create', auth, async (req, res) => {
 
     await Notification.create({
       user: factoryProfile.userId,
-   title: 'Order Details Received!',
+title: 'New Order Received!',
 message: `Brand ${brandUser?.name ?? 'Unknown'} sent order details for "${productName}" (${quantity} units).`,
       type: 'order',
       data: {
+          orderId: order._id,  // ✅ ضيف
         requestId: order._id,
         productName,
         quantity,
