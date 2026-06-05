@@ -117,7 +117,7 @@ req.files["productImages"].forEach((file, index) => {
     products[index].imageUrl = file.path;
   }
 });
-  }
+  
 
   updateData.factoryProducts = products;
 }
