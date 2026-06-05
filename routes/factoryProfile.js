@@ -77,9 +77,10 @@ router.get("/profile", authMiddleware, async (req, res) => {
 router.put(
   "/profile",
   authMiddleware,
-  uploadFactoryMedia.fields([
+ uploadFactoryMedia.fields([
     { name: "media", maxCount: 10 },
     { name: "logo", maxCount: 1 },
+    { name: "productImages", maxCount: 20 }, // ← ضيفي دي
   ]),
   handleUploadError,
   async (req, res) => {
@@ -106,13 +107,22 @@ router.put(
       if (productionCapacity) updateData.productionCapacity = productionCapacity;
       if (certifications) updateData.certifications = certifications;
       if (machinery) updateData.machinery = machinery;
+if (factoryProducts) {
+  let products = typeof factoryProducts === "string"
+    ? JSON.parse(factoryProducts)
+    : factoryProducts;
 
-      if (factoryProducts) {
-        updateData.factoryProducts =
-          typeof factoryProducts === "string"
-            ? JSON.parse(factoryProducts)
-            : factoryProducts;
+  if (req.files && req.files["productImages"]) {
+    req.files["productImages"].forEach((file, index) => {
+      if (products[index]) {
+        products[index].imageUrl = file.path;
       }
+    });
+  }
+
+  updateData.factoryProducts = products;
+}
+      
 
       // ✅ اللوجو
       if (req.files && req.files["logo"]) {
