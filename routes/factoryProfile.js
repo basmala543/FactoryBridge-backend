@@ -107,17 +107,21 @@ router.put(
       if (productionCapacity) updateData.productionCapacity = productionCapacity;
       if (certifications) updateData.certifications = certifications;
       if (machinery) updateData.machinery = machinery;
-if (factoryProducts) {
-  let products = typeof factoryProducts === "string"
-    ? JSON.parse(factoryProducts)
-    : factoryProducts;
 
-req.files["productImages"].forEach((file, index) => {
-  if (products[index] && file.size > 0) {
-    products[index].imageUrl = file.path;
+      if (factoryProducts) {
+        updateData.factoryProducts =
+          typeof factoryProducts === "string"
+            ? JSON.parse(factoryProducts)
+            : factoryProducts;
+
+
+              if (req.files && req.files["productImages"]) {
+    req.files["productImages"].forEach((file, index) => {
+     if (products[index] && file.size > 0) {
+  products[index].imageUrl = file.path;
+}
+    });
   }
-});
-  
 
   updateData.factoryProducts = products;
 }
