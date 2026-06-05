@@ -112,12 +112,11 @@ if (factoryProducts) {
     ? JSON.parse(factoryProducts)
     : factoryProducts;
 
-  if (req.files && req.files["productImages"]) {
-    req.files["productImages"].forEach((file, index) => {
-      if (products[index]) {
-        products[index].imageUrl = file.path;
-      }
-    });
+req.files["productImages"].forEach((file, index) => {
+  if (products[index] && file.size > 0) {
+    products[index].imageUrl = file.path;
+  }
+});
   }
 
   updateData.factoryProducts = products;
