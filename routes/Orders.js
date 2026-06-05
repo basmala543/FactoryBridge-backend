@@ -109,7 +109,8 @@ router.put('/:id/status', auth, async (req, res) => {
         orderId: order._id,
         productName: order.productName,
         status,
-        factoryId: req.user.userId,
+       factoryId: factoryProfile?._id,
+
         factoryName: factoryProfile?.factoryName ?? '',
         factoryLogo: factoryProfile?.imageUrl ?? '',
         brandName: brandUser?.name ?? '',
