@@ -44,9 +44,11 @@ message: `Brand ${brandUser?.name ?? 'Unknown'} sent order details for "${produc
         selectedSize,
         selectedColor,
         notes,
+       productData,  // ✅ أضيفي السطر ده
         brandId: req.user.userId,
         brandName: brandUser?.name ?? 'Unknown Brand',
         brandLogo: brandProfile?.logo ?? '',
+        
         // ✅ تفاصيل البراند
         brandDescription: brandProfile?.description ?? '',
         brandLocation: brandProfile?.location ?? '',
