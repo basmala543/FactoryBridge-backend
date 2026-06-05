@@ -13,17 +13,18 @@ const factoryProfileSchema = new mongoose.Schema(
     machinery: { type: String, required: true },
     media: { type: [String], default: [] },
     isTopDeal: { type: Boolean, default: false },
-    factoryProducts: [
-      {
-        productName: { type: String, default: '' },
-        unit: { type: String, default: 'per piece' },
-        price: { type: String, default: '' },
-        minimumOrder: { type: String, default: '' },
-        details: { type: String, default: '' },
-        availableColors: [{ type: String }],
-        availableSizes: [{ type: String }],
-      }
-    ],
+ factoryProducts: [
+  {
+    productName: { type: String, default: '' },
+    unit: { type: String, default: 'per piece' },
+    price: { type: String, default: '' },
+    minimumOrder: { type: String, default: '' },
+    details: { type: String, default: '' },
+    availableColors: [{ type: String }],
+    availableSizes: [{ type: String }],
+    imageUrl: { type: String, default: '' },  // ← ضيفي دي
+  }
+],
   },
   { timestamps: true }
 
