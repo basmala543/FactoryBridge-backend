@@ -117,9 +117,9 @@ router.put(
 
               if (req.files && req.files["productImages"]) {
     req.files["productImages"].forEach((file, index) => {
-     if (products[index] && file.size > 0) {
-  products[index].imageUrl = file.path;
-}
+      if (products[index]) {
+        products[index].imageUrl = file.path;
+      }
     });
   }
 
