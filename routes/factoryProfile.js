@@ -77,10 +77,10 @@ router.get("/profile", authMiddleware, async (req, res) => {
 router.put(
   "/profile",
   authMiddleware,
- uploadFactoryMedia.fields([
+  uploadFactoryMedia.fields([
     { name: "media", maxCount: 10 },
     { name: "logo", maxCount: 1 },
-    { name: "productImages", maxCount: 20 }, // ← ضيفي دي
+    { name: "productImages", maxCount: 20 },
   ]),
   handleUploadError,
   async (req, res) => {
@@ -94,7 +94,6 @@ router.put(
         certifications,
         machinery,
         factoryProducts,
-        // ✅ عشان الـ Flutter يقدر يبعت URLs القديمة اللي عايز يحتفظ بيها
         existingMediaUrls,
       } = req.body;
 
@@ -109,45 +108,38 @@ router.put(
       if (machinery) updateData.machinery = machinery;
 
       if (factoryProducts) {
-        updateData.factoryProducts =
+        let products =
           typeof factoryProducts === "string"
             ? JSON.parse(factoryProducts)
             : factoryProducts;
 
+        if (req.files && req.files["productImages"]) {
+          req.files["productImages"].forEach((file, index) => {
+            if (products[index] && file.size > 0) {
+              products[index].imageUrl = file.path;
+            }
+          });
+        }
 
-              if (req.files && req.files["productImages"]) {
-    req.files["productImages"].forEach((file, index) => {
-      if (products[index]) {
-        products[index].imageUrl = file.path;
+        updateData.factoryProducts = products;
       }
-    });
-  }
 
-  updateData.factoryProducts = products;
-}
-      
-
-      // ✅ اللوجو
+      // Logo
       if (req.files && req.files["logo"]) {
         updateData.logo = req.files["logo"][0].path;
       }
 
-      // ✅ الصور الجديدة — بنضيفها على القديمة (مش بنمسحها)
+      // Media
       if (req.files && req.files["media"] && req.files["media"].length > 0) {
         const newMediaUrls = req.files["media"].map((file) => file.path);
-
-        // الـ URLs القديمة اللي بعتها Flutter (اللي المستخدم محذفش منها)
         let keptUrls = [];
         if (existingMediaUrls) {
           keptUrls = Array.isArray(existingMediaUrls)
             ? existingMediaUrls
             : JSON.parse(existingMediaUrls);
         }
-
-        // دمج القديمة + الجديدة
         updateData.media = [...keptUrls, ...newMediaUrls];
       } else if (existingMediaUrls) {
-        // المستخدم حذف صور بس مضافش جديدة — بنحفظ اللي فضلت بس
         updateData.media = Array.isArray(existingMediaUrls)
           ? existingMediaUrls
           : JSON.parse(existingMediaUrls);
@@ -255,8 +247,5 @@ router.get("/:id", async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
-
-
-
 
 module.exports = router;
