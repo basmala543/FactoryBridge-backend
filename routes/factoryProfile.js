@@ -211,7 +211,9 @@ router.get("/recommended", async (req, res) => {
 // ================== TOP DEALS ==================
 router.get("/top-deals", async (req, res) => {
   try {
-    const factories = await FactoryProfile.find({ isTopDeal: true }).limit(10);
+    const factories = await FactoryProfile.find()
+      .sort({ rating: -1 })
+      .limit(10);
     res.status(200).json(factories);
   } catch (error) {
     res.status(500).json({ message: "Error", error: error.message });
@@ -223,6 +225,15 @@ router.get("/top-deals", async (req, res) => {
 router.get("/ai-recommended", async (req, res) => {
   try {
     const { category } = req.query;
+
+
+// لو مفيش category
+if (!category || category.trim() === "") {
+  const factories = await FactoryProfile.find()
+    .sort({ rating: -1 }) // ← الأعلى تقييم أول
+    .limit(10);
+  return res.status(200).json(factories);
+}
 
     if (!category || category.trim() === "") {
       const factories = await FactoryProfile.find().limit(10);
