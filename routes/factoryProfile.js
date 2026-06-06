@@ -224,87 +224,71 @@ router.get("/ai-recommended", async (req, res) => {
   try {
     const { category } = req.query;
 
-    const factories = await FactoryProfile.find().limit(30);
-
-    if (factories.length === 0) {
-      return res.status(200).json([]);
-    }
-
-    // لو مفيش category ارجع المصانع العادية
     if (!category || category.trim() === "") {
-      return res.status(200).json(factories.slice(0, 10));
+      const factories = await FactoryProfile.find().limit(10);
+      return res.status(200).json(factories);
     }
 
-    const factoriesData = factories.map((f) => ({
-      id: f._id.toString(),
-      name: f.factoryName,
-      categories: f.productCategories,
-      description: f.description,
-      location: f.location,
-    }));
+    // ← أول حاجة: دور على مصانع من نفس الـ category
+    const categoryFactories = await FactoryProfile.find({
+      productCategories: { $regex: category, $options: "i" },
+    }).limit(10);
 
-    const prompt = `You are a factory recommendation engine for a fashion sourcing platform.
+    // لو لقى مصانع من نفس الـ category، رجعهم مباشرة
+    if (categoryFactories.length > 0) {
+      // بعتهم للـ Gemini يرتبهم
+      const factoriesData = categoryFactories.map((f) => ({
+        id: f._id.toString(),
+        name: f.factoryName,
+        categories: f.productCategories,
+        description: f.description,
+      }));
 
-A brand with product category "${category}" is looking for suitable factories.
-
-Here are the available factories:
+      const prompt = `You are a factory recommendation engine.
+A brand with category "${category}" needs factories.
+Rank these factories by relevance:
 ${JSON.stringify(factoriesData, null, 2)}
+Return ONLY a JSON array of IDs. Example: ["id1", "id2"]`;
 
-Return ONLY a JSON array of factory IDs sorted by relevance to the brand's category "${category}".
-The most relevant factories should come first.
-Return maximum 10 factories.
-Return ONLY valid JSON array like: ["id1", "id2", "id3"]
-No explanation, no markdown, just the JSON array.`;
+      const geminiRes = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+          }),
+        }
+      );
 
-    // ── Gemini API ──
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-        }),
+      const geminiData = await geminiRes.json();
+      const aiText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "[]";
+      const cleanText = aiText.replace(/```json|```/g, "").trim();
+
+      try {
+        const sortedIds = JSON.parse(cleanText);
+        const factoryMap = {};
+        categoryFactories.forEach((f) => {
+          factoryMap[f._id.toString()] = f;
+        });
+        const sorted = sortedIds
+          .filter((id) => factoryMap[id])
+          .map((id) => factoryMap[id]);
+        
+        // لو الـ Gemini رجع حاجة، رجعها، لو لا رجع الـ category factories
+        return res.status(200).json(sorted.length > 0 ? sorted : categoryFactories);
+      } catch {
+        return res.status(200).json(categoryFactories);
       }
-    );
-
-    const geminiData = await geminiRes.json();
-    const aiText =
-      geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "[]";
-
-    // نظف الـ response من الـ markdown
-    const cleanText = aiText.replace(/```json|```/g, "").trim();
-console.log("🤖 Gemini response:", cleanText);
-console.log("📦 Sorted IDs:", sortedIds);
-
-    let sortedIds = [];
-    try {
-      sortedIds = JSON.parse(cleanText);
-    } catch {
-      return res.status(200).json(factories.slice(0, 10));
     }
 
-    const factoryMap = {};
-    factories.forEach((f) => {
-      factoryMap[f._id.toString()] = f;
-    });
+    // لو مفيش مصانع من الـ category، رجع فاضي
+    return res.status(200).json([]);
 
-    const sortedFactories = sortedIds
-      .filter((id) => factoryMap[id])
-      .map((id) => factoryMap[id]);
-
-    // لو الـ AI مرجعش نتايج كافية، أضيف من الباقي
-   // رجع بس اللي الـ AI اختارهم
-res.status(200).json(sortedFactories);
-    res.status(200).json(sortedFactories);
   } catch (error) {
     console.error("AI recommendation error:", error);
-    try {
-      const fallback = await FactoryProfile.find().limit(10);
-      res.status(200).json(fallback);
-    } catch (e) {
-      res.status(500).json({ message: "Error", error: error.message });
-    }
+    const fallback = await FactoryProfile.find().limit(10);
+    res.status(200).json(fallback);
   }
 });
 
