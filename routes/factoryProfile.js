@@ -294,13 +294,8 @@ console.log("📦 Sorted IDs:", sortedIds);
       .map((id) => factoryMap[id]);
 
     // لو الـ AI مرجعش نتايج كافية، أضيف من الباقي
-    if (sortedFactories.length < 5) {
-      const extra = factories
-        .filter((f) => !sortedIds.includes(f._id.toString()))
-        .slice(0, 10 - sortedFactories.length);
-      sortedFactories.push(...extra);
-    }
-
+   // رجع بس اللي الـ AI اختارهم
+res.status(200).json(sortedFactories);
     res.status(200).json(sortedFactories);
   } catch (error) {
     console.error("AI recommendation error:", error);
