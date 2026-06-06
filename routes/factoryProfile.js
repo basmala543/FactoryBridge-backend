@@ -274,6 +274,8 @@ No explanation, no markdown, just the JSON array.`;
 
     // نظف الـ response من الـ markdown
     const cleanText = aiText.replace(/```json|```/g, "").trim();
+console.log("🤖 Gemini response:", cleanText);
+console.log("📦 Sorted IDs:", sortedIds);
 
     let sortedIds = [];
     try {
