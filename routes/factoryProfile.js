@@ -124,12 +124,10 @@ router.put(
         updateData.factoryProducts = products;
       }
 
-      // Logo
       if (req.files && req.files["logo"]) {
         updateData.logo = req.files["logo"][0].path;
       }
 
-      // Media
       if (req.files && req.files["media"] && req.files["media"].length > 0) {
         const newMediaUrls = req.files["media"].map((file) => file.path);
         let keptUrls = [];
@@ -217,6 +215,99 @@ router.get("/top-deals", async (req, res) => {
     res.status(200).json(factories);
   } catch (error) {
     res.status(500).json({ message: "Error", error: error.message });
+  }
+});
+
+// ================== AI RECOMMENDED (Gemini) ==================
+// ⚠️ لازم يكون قبل /:id عشان Express ميفسرهوش كـ ID
+router.get("/ai-recommended", async (req, res) => {
+  try {
+    const { category } = req.query;
+
+    const factories = await FactoryProfile.find().limit(30);
+
+    if (factories.length === 0) {
+      return res.status(200).json([]);
+    }
+
+    // لو مفيش category ارجع المصانع العادية
+    if (!category || category.trim() === "") {
+      return res.status(200).json(factories.slice(0, 10));
+    }
+
+    const factoriesData = factories.map((f) => ({
+      id: f._id.toString(),
+      name: f.factoryName,
+      categories: f.productCategories,
+      description: f.description,
+      location: f.location,
+    }));
+
+    const prompt = `You are a factory recommendation engine for a fashion sourcing platform.
+
+A brand with product category "${category}" is looking for suitable factories.
+
+Here are the available factories:
+${JSON.stringify(factoriesData, null, 2)}
+
+Return ONLY a JSON array of factory IDs sorted by relevance to the brand's category "${category}".
+The most relevant factories should come first.
+Return maximum 10 factories.
+Return ONLY valid JSON array like: ["id1", "id2", "id3"]
+No explanation, no markdown, just the JSON array.`;
+
+    // ── Gemini API ──
+    const geminiRes = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+        }),
+      }
+    );
+
+    const geminiData = await geminiRes.json();
+    const aiText =
+      geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "[]";
+
+    // نظف الـ response من الـ markdown
+    const cleanText = aiText.replace(/```json|```/g, "").trim();
+
+    let sortedIds = [];
+    try {
+      sortedIds = JSON.parse(cleanText);
+    } catch {
+      return res.status(200).json(factories.slice(0, 10));
+    }
+
+    const factoryMap = {};
+    factories.forEach((f) => {
+      factoryMap[f._id.toString()] = f;
+    });
+
+    const sortedFactories = sortedIds
+      .filter((id) => factoryMap[id])
+      .map((id) => factoryMap[id]);
+
+    // لو الـ AI مرجعش نتايج كافية، أضيف من الباقي
+    if (sortedFactories.length < 5) {
+      const extra = factories
+        .filter((f) => !sortedIds.includes(f._id.toString()))
+        .slice(0, 10 - sortedFactories.length);
+      sortedFactories.push(...extra);
+    }
+
+    res.status(200).json(sortedFactories);
+  } catch (error) {
+    console.error("AI recommendation error:", error);
+    try {
+      const fallback = await FactoryProfile.find().limit(10);
+      res.status(200).json(fallback);
+    } catch (e) {
+      res.status(500).json({ message: "Error", error: error.message });
+    }
   }
 });
 
