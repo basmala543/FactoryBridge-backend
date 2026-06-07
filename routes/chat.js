@@ -182,4 +182,28 @@ router.post("/:chatId/messages", authMiddleware, async (req, res) => {
   }
 });
 
+
+router.delete('/:chatId', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { chatId } = req.params;
+    const parts = chatId.split('_');
+    if (parts.length < 2) return res.status(400).json({ message: 'Invalid chatId' });
+    const [idA, idB] = parts;
+    if (userId !== idA && userId !== idB) return res.status(403).json({ message: 'Access denied' });
+
+    await Message.deleteMany({
+      $or: [
+        { senderId: idA, receiverId: idB },
+        { senderId: idB, receiverId: idA },
+      ],
+    });
+
+    return res.json({ message: 'Conversation deleted' });
+  } catch (err) {
+    console.error('❌ DELETE /api/chats/:chatId error:', err);
+    return res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
 module.exports = router;
