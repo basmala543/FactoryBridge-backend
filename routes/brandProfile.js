@@ -119,5 +119,13 @@ router.get("/admin/all", async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
+router.delete("/admin/:id", async (req, res) => {
+  try {
+    await BrandProfile.findByIdAndDelete(req.params.id);
+    res.json({ message: "Brand deleted" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 
 module.exports = router;

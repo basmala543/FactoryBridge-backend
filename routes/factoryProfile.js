@@ -427,5 +427,12 @@ router.get("/admin/all", async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
-
+router.delete("/admin/:id", async (req, res) => {
+  try {
+    await FactoryProfile.findByIdAndDelete(req.params.id);
+    res.json({ message: "Factory deleted" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 module.exports = router;

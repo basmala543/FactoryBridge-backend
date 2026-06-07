@@ -12,8 +12,7 @@ const userSchema = new mongoose.Schema({
 
   role: {
     type: String,
-    enum: ["factory", "brand"],
-    required: true,
+  enum: ["factory", "brand", "admin"], // ← أضيفي admin    required: true,
   },
 
   otp: String,
