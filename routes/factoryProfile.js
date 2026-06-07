@@ -217,9 +217,10 @@ router.get("/top-deals", async (req, res) => {
     const withRatings = await Promise.all(
       factories.map(async (f) => {
         const reviews = await Review.find({ factory: f._id.toString() });
-        const avg = reviews.length > 0
-          ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
-          : 0;
+        const avg =
+          reviews.length > 0
+            ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+            : 0;
         return { ...f.toObject(), rating: avg };
       })
     );
@@ -235,85 +236,93 @@ router.get("/top-deals", async (req, res) => {
 });
 
 // ================== AI RECOMMENDED (Gemini) ==================
-// ⚠️ لازم يكون قبل /:id عشان Express ميفسرهوش كـ ID
+// ⚠️ لازم يكون قبل /:id
 router.get("/ai-recommended", async (req, res) => {
   try {
     const { category } = req.query;
 
-
-// لو مفيش category
-if (!category || category.trim() === "") {
-  const factories = await FactoryProfile.find()
-    .sort({ rating: -1 }) // ← الأعلى تقييم أول
-    .limit(10);
-  return res.status(200).json(factories);
-}
-
+    // لو مفيش category → رجع الأعلى تقييم
     if (!category || category.trim() === "") {
-      const factories = await FactoryProfile.find().limit(10);
-      return res.status(200).json(factories);
+      const Review = require("../models/review");
+      const factories = await FactoryProfile.find();
+      const withRatings = await Promise.all(
+        factories.map(async (f) => {
+          const reviews = await Review.find({ factory: f._id.toString() });
+          const avg =
+            reviews.length > 0
+              ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+              : 0;
+          return { ...f.toObject(), rating: avg };
+        })
+      );
+      const sorted = withRatings
+        .sort((a, b) => b.rating - a.rating)
+        .slice(0, 10);
+      return res.status(200).json(sorted);
     }
 
-    // ← أول حاجة: دور على مصانع من نفس الـ category
+    // دور على مصانع من نفس الـ category
     const categoryFactories = await FactoryProfile.find({
       productCategories: { $regex: category, $options: "i" },
     }).limit(10);
 
-    // لو لقى مصانع من نفس الـ category، رجعهم مباشرة
-    if (categoryFactories.length > 0) {
-      // بعتهم للـ Gemini يرتبهم
-      const factoriesData = categoryFactories.map((f) => ({
-        id: f._id.toString(),
-        name: f.factoryName,
-        categories: f.productCategories,
-        description: f.description,
-      }));
+    // لو مفيش مصانع من الـ category، رجع فاضي
+    if (categoryFactories.length === 0) {
+      return res.status(200).json([]);
+    }
 
-      const prompt = `You are a factory recommendation engine.
+    // بعتهم للـ Gemini يرتبهم
+    const factoriesData = categoryFactories.map((f) => ({
+      id: f._id.toString(),
+      name: f.factoryName,
+      categories: f.productCategories,
+      description: f.description,
+    }));
+
+    const prompt = `You are a factory recommendation engine.
 A brand with category "${category}" needs factories.
 Rank these factories by relevance:
 ${JSON.stringify(factoriesData, null, 2)}
 Return ONLY a JSON array of IDs. Example: ["id1", "id2"]`;
 
-      const geminiRes = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-          }),
-        }
-      );
-
-      const geminiData = await geminiRes.json();
-      const aiText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "[]";
-      const cleanText = aiText.replace(/```json|```/g, "").trim();
-
-      try {
-        const sortedIds = JSON.parse(cleanText);
-        const factoryMap = {};
-        categoryFactories.forEach((f) => {
-          factoryMap[f._id.toString()] = f;
-        });
-        const sorted = sortedIds
-          .filter((id) => factoryMap[id])
-          .map((id) => factoryMap[id]);
-        
-        // لو الـ Gemini رجع حاجة، رجعها، لو لا رجع الـ category factories
-        return res.status(200).json(sorted.length > 0 ? sorted : categoryFactories);
-      } catch {
-        return res.status(200).json(categoryFactories);
+    const geminiRes = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+        }),
       }
+    );
+
+    const geminiData = await geminiRes.json();
+    const aiText =
+      geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "[]";
+    const cleanText = aiText.replace(/```json|```/g, "").trim();
+
+    try {
+      const sortedIds = JSON.parse(cleanText);
+      const factoryMap = {};
+      categoryFactories.forEach((f) => {
+        factoryMap[f._id.toString()] = f;
+      });
+      const sorted = sortedIds
+        .filter((id) => factoryMap[id])
+        .map((id) => factoryMap[id]);
+
+      return res.status(200).json(sorted.length > 0 ? sorted : categoryFactories);
+    } catch {
+      return res.status(200).json(categoryFactories);
     }
-
-    // لو مفيش مصانع من الـ category، رجع فاضي
-    return res.status(200).json([]);
-
   } catch (error) {
     console.error("AI recommendation error:", error);
-    const fallback = await FactoryProfile.find().limit(10);
-    res.status(200).json(fallback);
+    try {
+      const fallback = await FactoryProfile.find().limit(10);
+      res.status(200).json(fallback);
+    } catch (e) {
+      res.status(500).json({ message: "Error", error: error.message });
+    }
   }
 });
 
