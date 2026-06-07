@@ -18,18 +18,27 @@ const orderSchema = new mongoose.Schema({
   status: {
     type: String,
     enum: [
-      'pending',
-      'accepted',
-      'rejected',
-      'pending_payment',
-      'in_progress',
-      'waiting_delivery',
-      'out_for_delivery',
-      'delivered',
-      'done',
+      'pending', 'accepted', 'rejected', 'pending_payment',
+      'in_progress', 'waiting_delivery', 'out_for_delivery',
+      'delivered', 'done',
     ],
     default: 'pending',
   },
+
+  // ✅ Payment
+  totalPrice: { type: Number },
+  deposit: { type: Number },
+  paymentMethod: { type: String },
+  currency: { type: String, default: 'USD' },
+
+  // ✅ Delivery
+  deliveryDate: { type: Date },
+  shippingMethod: { type: String },
+
+  // ✅ Production
+  materials: { type: String },
+  manufacturingTime: { type: String },
+
 }, { timestamps: true });
 
 module.exports = mongoose.model('Order', orderSchema);

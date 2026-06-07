@@ -6,7 +6,7 @@ const BrandProfile = require('../models/brandProfile');
 const Notification = require('../models/Notification');
 const User = require('../models/users');
 const auth = require('../middleware/authMiddleware');
-
+const { createContract } = require('../controllers/contractController');
 // البراند يعمل order
 router.post('/create', auth, async (req, res) => {
   try {
@@ -102,7 +102,10 @@ router.put('/:id/status', auth, async (req, res) => {
 
     order.status = status;
     await order.save();
-
+    
+if (status === 'accepted') {
+  await createContract(order._id);
+}
     const brandUser = await User.findById(order.brand);
     const brandProfile = await BrandProfile.findOne({ userId: order.brand });
 
