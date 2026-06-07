@@ -110,5 +110,14 @@ router.put(
     }
   },
 );
+// ================== ADMIN - GET ALL BRANDS ==================
+router.get("/admin/all", async (req, res) => {
+  try {
+    const brands = await BrandProfile.find();
+    res.json({ data: brands });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 
 module.exports = router;

@@ -26,6 +26,9 @@ const transporter = nodemailer.createTransport({
   }
 });
 
+
+
+
 // ================== SIGNUP ==================
 router.post("/signup", async (req, res) => {
   try {
@@ -228,5 +231,13 @@ router.delete("/delete-account", authMiddleware, async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
-
+// ================== ADMIN - GET ALL USERS ==================
+router.get("/admin/users", async (req, res) => {
+  try {
+    const users = await User.find({}, { password: 0, otp: 0 });
+    res.json({ data: users });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 module.exports = router;

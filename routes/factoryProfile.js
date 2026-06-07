@@ -392,6 +392,7 @@ router.delete("/offers/:offerId", authMiddleware, async (req, res) => {
   }
 });
 
+
 // ================== GET ALL ACTIVE OFFERS ==================
 router.get("/all-offers", async (req, res) => {
   try {
@@ -417,6 +418,14 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-
+// ================== ADMIN - GET ALL FACTORIES ==================
+router.get("/admin/all", async (req, res) => {
+  try {
+    const factories = await FactoryProfile.find();
+    res.json({ data: factories });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 
 module.exports = router;
