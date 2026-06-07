@@ -50,7 +50,7 @@ function buildStatusOptions(status) {
         'accepted': ['in_progress', 'waiting_delivery'],
         'in_progress': ['waiting_delivery', 'out_for_delivery'],
         'waiting_delivery': ['out_for_delivery'],
-        'out_for_delivery': ['delivered'],
+        'out_for_delivery': ['done'],
         'delivered': ['done'],
         'done': [],
         'rejected': [],
