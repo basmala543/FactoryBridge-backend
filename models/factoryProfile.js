@@ -25,6 +25,16 @@ const factoryProfileSchema = new mongoose.Schema(
     imageUrl: { type: String, default: '' },  // ← ضيفي دي
   }
 ],
+ offers: [        // ✅ جديد
+      {
+        title: { type: String, default: '' },
+        discountPercent: { type: Number, default: 0 },
+        minimumOrder: { type: String, default: '' },
+        description: { type: String, default: '' },
+        expiryDate: { type: Date, default: null },
+        isActive: { type: Boolean, default: true },
+      }
+    ],
   },
   { timestamps: true }
 

@@ -338,6 +338,61 @@ router.get("/:id/products", async (req, res) => {
   }
 });
 
+// ================== ADD OFFER ==================
+router.post("/offers", authMiddleware, async (req, res) => {
+  try {
+    const { title, discountPercent, minimumOrder, description, expiryDate } = req.body;
+    const profile = await FactoryProfile.findOneAndUpdate(
+      { userId: req.user.userId },
+      { $push: { offers: { title, discountPercent, minimumOrder, description, expiryDate } } },
+      { new: true }
+    );
+    if (!profile) return res.status(404).json({ message: "Factory profile not found" });
+    res.status(201).json({ message: "Offer added", data: profile.offers });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ================== GET MY OFFERS ==================
+router.get("/offers", authMiddleware, async (req, res) => {
+  try {
+    const profile = await FactoryProfile.findOne({ userId: req.user.userId });
+    if (!profile) return res.status(404).json({ message: "Factory profile not found" });
+    res.json({ data: profile.offers || [] });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ================== DELETE OFFER ==================
+router.delete("/offers/:offerId", authMiddleware, async (req, res) => {
+  try {
+    const profile = await FactoryProfile.findOneAndUpdate(
+      { userId: req.user.userId },
+      { $pull: { offers: { _id: req.params.offerId } } },
+      { new: true }
+    );
+    if (!profile) return res.status(404).json({ message: "Factory profile not found" });
+    res.json({ message: "Offer deleted", data: profile.offers });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ================== GET ALL ACTIVE OFFERS ==================
+router.get("/all-offers", async (req, res) => {
+  try {
+    const factories = await FactoryProfile.find(
+      { "offers.isActive": true },
+      { factoryName: 1, logo: 1, location: 1, offers: 1 }
+    );
+    res.json({ data: factories });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // ================== GET FACTORY BY ID ==================
 router.get("/:id", async (req, res) => {
   try {
@@ -345,13 +400,12 @@ router.get("/:id", async (req, res) => {
     if (!factory) {
       return res.status(404).json({ message: "Factory not found" });
     }
-    res.json({
-      message: "Factory fetched successfully",
-      data: factory,
-    });
+    res.json({ message: "Factory fetched successfully", data: factory });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
+
+
 
 module.exports = router;
