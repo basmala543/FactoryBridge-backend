@@ -28,9 +28,9 @@ const getContractByOrder = async (req, res) => {
     if (!contract) return res.status(404).json({ message: 'Contract not found' });
 
     // جيب Factory و Brand profiles
-    const factoryProfile = await FactoryProfile.findOne({ userId: contract.factory });
+const factoryProfile = await FactoryProfile.findById(contract.factory);
     const brandProfile = await BrandProfile.findOne({ userId: contract.brand });
-    const factoryUser = await User.findById(contract.factory);
+const factoryUser = await User.findById(factoryProfile?.userId);
     const brandUser = await User.findById(contract.brand);
 
     res.json({
