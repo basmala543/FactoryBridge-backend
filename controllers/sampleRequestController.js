@@ -121,4 +121,16 @@ console.log('Request found:', request);
   } catch (error) {
     res.status(500).json({ message: "Error updating status", error });
   }
+  exports.getAllRequests = async (req, res) => {
+  try {
+    const requests = await SampleRequest.find()
+      .populate('brand', 'brandName location logo')
+      .populate('factory', 'factoryName location logo')
+      .sort({ createdAt: -1 });
+    
+    res.json({ success: true, data: requests });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 };
