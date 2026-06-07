@@ -163,24 +163,6 @@ router.put(
   }
 );
 
-// ================== SEARCH ==================
-router.get("/search-factories", async (req, res) => {
-  try {
-    const searchTerm = req.query.q;
-    const results = await FactoryProfile.find({
-      $or: [
-        { factoryName: { $regex: searchTerm, $options: "i" } },
-        { productCategories: { $regex: searchTerm, $options: "i" } },
-        { description: { $regex: searchTerm, $options: "i" } },
-        { location: { $regex: searchTerm, $options: "i" } },
-      ],
-    });
-    res.status(200).json(results);
-  } catch (error) {
-    res.status(500).json({ message: "خطأ في عملية البحث", error });
-  }
-});
-
 // ================== BY CATEGORY ==================
 router.get("/by-category", async (req, res) => {
   try {
