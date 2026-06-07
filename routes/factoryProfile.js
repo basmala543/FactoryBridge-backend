@@ -396,9 +396,8 @@ router.delete("/offers/:offerId", authMiddleware, async (req, res) => {
 router.get("/all-offers", async (req, res) => {
   try {
     const factories = await FactoryProfile.find(
-      { "offers.isActive": true },
-      { factoryName: 1, logo: 1, location: 1, offers: 1 }
-    );
+      { "offers.0": { $exists: true } }
+    ).select("factoryName logo location offers");
     res.json({ data: factories });
   } catch (err) {
     res.status(500).json({ message: err.message });
