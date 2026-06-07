@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const MessageSchema = new mongoose.Schema({
     senderId: { type: String, required: true },
     receiverId: { type: String, default: 'admin' },
-    message: { type: String, required: true },
+   message: { type: String, default: '' }, // مش required عشان attachments
     timestamp: { type: Date, default: Date.now },
     isRead: { type: Boolean, default: false },
     // ✅ أضيفي دول

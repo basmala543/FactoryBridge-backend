@@ -7,8 +7,13 @@ const BrandProfile = require('../models/brandProfile');
 const authMiddleware = require("../middleware/authMiddleware");
 const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
-
 const upload = multer({ storage: multer.memoryStorage() });
+
+cloudinary.config({
+  cloud_name: process.env.CLOUD_NAME,
+  api_key: process.env.API_KEY,
+  api_secret: process.env.API_SECRET,
+});
 
 const User = mongoose.models.User || mongoose.model("User", new mongoose.Schema({
   name: String,
