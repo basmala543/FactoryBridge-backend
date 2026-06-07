@@ -36,8 +36,7 @@ const favoriteRoutes = require("./routes/favorites");
 const chatRoutes = require("./routes/chat");
 const sampleRequestsRouter = require('./routes/sampleRequests');
 const factoryOrdersRouter = require('./routes/factoryOrders');
-const contractRoutes = require('./routes/contractRoutes');
-
+const contractRoutes = require('./routes/contracts');
 
 app.use("/api/brand", brandProfileRoutes);
 app.use("/api/help", helpRoutes);
