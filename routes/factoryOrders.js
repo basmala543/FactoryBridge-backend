@@ -88,7 +88,7 @@ router.get('/accepted-orders', auth, async (req, res) => {
             return res.status(404).json({ message: 'Factory profile not found' });
         }
 
-        const activeStatuses = ['accepted', 'pending_payment', 'in_progress', 'waiting_delivery', 'out_for_delivery'];
+        const activeStatuses = ['accepted', 'pending_payment', 'in_progress', 'waiting_delivery'];
         const orders = await Order.find({
             factory: factoryProfile._id.toString(),
             status: { $in: activeStatuses },
