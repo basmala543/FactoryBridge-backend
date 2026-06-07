@@ -350,13 +350,17 @@ router.post("/offers", authMiddleware, async (req, res) => {
     const { title, discountPercent, minimumOrder, description, expiryDate } = req.body;
     const profile = await FactoryProfile.findOneAndUpdate(
       { userId: req.user.userId },
-      { $push: { offers: { 
-          title, 
-          discountPercent: Number(discountPercent), // ← التعديل هنا
-          minimumOrder, 
-          description, 
-          expiryDate 
-      }}},
+      {
+        $push: {
+          offers: {
+            title,
+            discountPercent: Number(discountPercent), // ← التعديل هنا
+            minimumOrder,
+            description,
+            expiryDate
+          }
+        }
+      },
       { new: true }
     );
     if (!profile) return res.status(404).json({ message: "Factory profile not found" });
@@ -405,6 +409,58 @@ router.get("/all-offers", async (req, res) => {
   }
 });
 
+// ================== SEARCH FACTORIES (with ratings) ==================
+router.get("/search-factories", async (req, res) => {
+  try {
+    const { q } = req.query;
+    const Review = require("../models/review");
+
+    // Build search query
+    const searchQuery = q && q.trim() !== ""
+      ? {
+        $or: [
+          { factoryName: { $regex: q, $options: "i" } },
+          { productCategories: { $regex: q, $options: "i" } },
+          { location: { $regex: q, $options: "i" } },
+          { description: { $regex: q, $options: "i" } },
+        ],
+      }
+      : {};
+
+    const factories = await FactoryProfile.find(searchQuery).lean();
+
+    // Enrich with ratings
+    const withRatings = await Promise.all(
+      factories.map(async (f) => {
+        try {
+          const reviews = await Review.find({ factory: f._id.toString() });
+          const avgRating =
+            reviews.length > 0
+              ? reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviews.length
+              : 0;
+          return {
+            ...f,
+            rating: Math.round(avgRating * 10) / 10, // Round to 1 decimal
+            id: f._id.toString(),
+          };
+        } catch (err) {
+          console.error(`Error calculating rating for factory ${f._id}:`, err);
+          return {
+            ...f,
+            rating: 0,
+            id: f._id.toString(),
+          };
+        }
+      })
+    );
+
+    res.status(200).json(withRatings);
+  } catch (error) {
+    console.error("Search factories error:", error);
+    res.status(500).json({ message: "Error searching factories", error: error.message });
+  }
+});
+
 // ================== GET FACTORY BY ID ==================
 router.get("/:id", async (req, res) => {
   try {
@@ -435,4 +491,5 @@ router.delete("/admin/:id", async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
+
 module.exports = router;
