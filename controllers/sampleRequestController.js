@@ -1,8 +1,8 @@
-const mongoose = require('mongoose'); // ✅ أضيفي هذا السطر
+const mongoose = require('mongoose');
 const SampleRequest = require('../models/SampleRequest');
 const Notification = require('../models/Notification');
 const FactoryProfile = require('../models/factoryProfile');
-const BrandProfile = require('../models/brandProfile'); // ✅ أضف هذا
+const BrandProfile = require('../models/brandProfile');
 
 
 exports.createRequest = async (req, res) => {
@@ -15,13 +15,12 @@ exports.createRequest = async (req, res) => {
     }
     const factoryUserId = factoryProfile.userId;
 
-    // ✅ جيبي اسم البراند
     const brandProfile = await BrandProfile.findOne({ userId: req.user.userId });
     const brandName = brandProfile?.brandName || brandProfile?.name || 'A Brand';
 
     const request = await SampleRequest.create({
       brand: req.user.userId,
-      factory: factoryUserId, // ✅ غيري من factoryId لـ factoryUserId
+      factory: factoryUserId,
       productName,
       quantity,
       notes,
@@ -33,13 +32,12 @@ exports.createRequest = async (req, res) => {
       message: `You received a new sample request for "${productName}" (${quantity} units).`,
       type: 'system',
       data: {
-  requestId: request._id.toString(), // ✅ كده
+        requestId: request._id.toString(),
         productName,
         quantity,
-        brandName,      // ✅ أضيفي دي
-        brandId: req.user.userId, // ✅ وده
-       brandLogo: brandProfile?.logo || null, // ✅ أضيفي دي
-
+        brandName,
+        brandId: req.user.userId,
+        brandLogo: brandProfile?.logo || null,
       },
     });
 
@@ -48,13 +46,13 @@ exports.createRequest = async (req, res) => {
     res.status(500).json({ message: "Error creating request", error });
   }
 };
+
 exports.getFactoryRequests = async (req, res) => {
   try {
     const requests = await SampleRequest.find({ 
       factory: req.user.userId 
     }).sort({ createdAt: -1 });
 
-    // ✅ أضيفي هذا
     const enriched = await Promise.all(requests.map(async (req) => {
       const brandProfile = await BrandProfile.findOne({ userId: req.brand });
       return {
@@ -72,19 +70,18 @@ exports.getFactoryRequests = async (req, res) => {
 exports.updateStatus = async (req, res) => {
   try {
     const { status } = req.body;
- const request = await SampleRequest.findOneAndUpdate(
-  { _id: new mongoose.Types.ObjectId(req.params.id.trim()) },
-  { status },
-  { new: true }
-);
-console.log('Looking for ID:', req.params.id);
-console.log('Request found:', request);
+    const request = await SampleRequest.findOneAndUpdate(
+      { _id: new mongoose.Types.ObjectId(req.params.id.trim()) },
+      { status },
+      { new: true }
+    );
+    console.log('Looking for ID:', req.params.id);
+    console.log('Request found:', request);
 
     if (!request) {
       return res.status(404).json({ message: "Request not found" });
     }
 
-    // ✅ جيبي بيانات الـ factory
     const factoryProfile = await FactoryProfile.findOne({ userId: req.user.userId });
     const factoryName = factoryProfile?.factoryName || 'Factory';
     const factoryLogo = factoryProfile?.logo || null;
@@ -96,10 +93,10 @@ console.log('Request found:', request);
         message: `Your sample request for "${request.productName}" has been accepted.`,
         type: 'system',
         data: {
-          factoryName,      // ✅
-          factoryLogo,      // ✅
-          requestId: request._id.toString(),      // ✅ أضيفي دي
-          productName: request.productName,        // ✅ وده
+          factoryName,
+          factoryLogo,
+          requestId: request._id.toString(),
+          productName: request.productName,
         },
       });
     } else if (status === 'rejected') {
@@ -109,10 +106,10 @@ console.log('Request found:', request);
         message: `Your sample request for "${request.productName}" was not accepted.`,
         type: 'system',
         data: {
-          factoryName,      // ✅
-          factoryLogo,      // ✅
-          requestId: request._id.toString(),      // ✅ أضيفي دي
-          productName: request.productName,        // ✅ وده
+          factoryName,
+          factoryLogo,
+          requestId: request._id.toString(),
+          productName: request.productName,
         },
       });
     }
@@ -121,7 +118,9 @@ console.log('Request found:', request);
   } catch (error) {
     res.status(500).json({ message: "Error updating status", error });
   }
-  exports.getAllRequests = async (req, res) => {
+};
+
+exports.getAllRequests = async (req, res) => {
   try {
     const requests = await SampleRequest.find()
       .populate('brand', 'brandName location logo')
@@ -132,6 +131,4 @@ console.log('Request found:', request);
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
-};
-
 };
