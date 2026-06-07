@@ -212,7 +212,14 @@ router.get("/recommended", async (req, res) => {
 router.get("/top-deals", async (req, res) => {
   try {
     const Review = require("../models/review");
-    const factories = await FactoryProfile.find();
+    const { category } = req.query; // ← أضف ده
+
+    // لو في category فلتر بيها، لو لأ جيب الكل
+    const query = category && category.trim() !== ""
+      ? { productCategories: { $regex: category, $options: "i" } }
+      : {};
+
+    const factories = await FactoryProfile.find(query); // ← استخدم query هنا
 
     const withRatings = await Promise.all(
       factories.map(async (f) => {
