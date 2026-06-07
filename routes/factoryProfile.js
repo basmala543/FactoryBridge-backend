@@ -211,10 +211,24 @@ router.get("/recommended", async (req, res) => {
 // ================== TOP DEALS ==================
 router.get("/top-deals", async (req, res) => {
   try {
-    const factories = await FactoryProfile.find()
-      .sort({ rating: -1 })
-      .limit(10);
-    res.status(200).json(factories);
+    const Review = require("../models/review");
+    const factories = await FactoryProfile.find();
+
+    const withRatings = await Promise.all(
+      factories.map(async (f) => {
+        const reviews = await Review.find({ factory: f._id.toString() });
+        const avg = reviews.length > 0
+          ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+          : 0;
+        return { ...f.toObject(), rating: avg };
+      })
+    );
+
+    const sorted = withRatings
+      .sort((a, b) => b.rating - a.rating)
+      .slice(0, 10);
+
+    res.status(200).json(sorted);
   } catch (error) {
     res.status(500).json({ message: "Error", error: error.message });
   }
