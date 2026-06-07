@@ -17,6 +17,7 @@ exports.createRequest = async (req, res) => {
 
     const brandProfile = await BrandProfile.findOne({ userId: req.user.userId });
     const brandName = brandProfile?.brandName || brandProfile?.name || 'A Brand';
+    const brandUser = await require('../models/users').findById(req.user.userId);
 
     const request = await SampleRequest.create({
       brand: req.user.userId,
@@ -35,9 +36,14 @@ exports.createRequest = async (req, res) => {
         requestId: request._id.toString(),
         productName,
         quantity,
-        brandName,
+        brandName: brandUser?.name ?? brandName,
         brandId: req.user.userId,
         brandLogo: brandProfile?.logo || null,
+        brandDescription: brandProfile?.description || '',
+        brandLocation: brandProfile?.location || '',
+        brandCategory: brandProfile?.productCategories || '',
+        brandIndustry: brandProfile?.industry || '',
+        brandContact: brandProfile?.contactInformation || '',
       },
     });
 
@@ -49,8 +55,8 @@ exports.createRequest = async (req, res) => {
 
 exports.getFactoryRequests = async (req, res) => {
   try {
-    const requests = await SampleRequest.find({ 
-      factory: req.user.userId 
+    const requests = await SampleRequest.find({
+      factory: req.user.userId
     }).sort({ createdAt: -1 });
 
     const enriched = await Promise.all(requests.map(async (req) => {
@@ -85,34 +91,27 @@ exports.updateStatus = async (req, res) => {
     const factoryProfile = await FactoryProfile.findOne({ userId: req.user.userId });
     const factoryName = factoryProfile?.factoryName || 'Factory';
     const factoryLogo = factoryProfile?.logo || null;
+    const factoryId = factoryProfile?._id?.toString() || '';
 
-    if (status === 'accepted') {
-      await Notification.create({
-        user: request.brand,
-        title: 'Sample Request Accepted!',
-        message: `Your sample request for "${request.productName}" has been accepted.`,
-        type: 'system',
-        data: {
-          factoryName,
-          factoryLogo,
-          requestId: request._id.toString(),
-          productName: request.productName,
-        },
-      });
-    } else if (status === 'rejected') {
-      await Notification.create({
-        user: request.brand,
-        title: 'Sample Request Update',
-        message: `Your sample request for "${request.productName}" was not accepted.`,
-        type: 'system',
-        data: {
-          factoryName,
-          factoryLogo,
-          requestId: request._id.toString(),
-          productName: request.productName,
-        },
-      });
-    }
+    const title = status === 'accepted' ? 'Sample Request Accepted!' : 'Sample Request Declined';
+    const message = status === 'accepted'
+      ? `Your sample request for "${request.productName}" has been accepted.`
+      : `Your sample request for "${request.productName}" has been declined.`;
+
+    await Notification.create({
+      user: request.brand,
+      title,
+      message,
+      type: 'system',
+      data: {
+        factoryName,
+        factoryLogo,
+        factoryId,
+        requestId: request._id.toString(),
+        productName: request.productName,
+        status,
+      },
+    });
 
     res.json({ data: request });
   } catch (error) {
@@ -126,7 +125,7 @@ exports.getAllRequests = async (req, res) => {
       .populate('brand', 'brandName location logo')
       .populate('factory', 'factoryName location logo')
       .sort({ createdAt: -1 });
-    
+
     res.json({ success: true, data: requests });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

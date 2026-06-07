@@ -34,22 +34,22 @@ router.post('/create', auth, async (req, res) => {
 
     await Notification.create({
       user: factoryProfile.userId,
-title: 'New Order Received!',
-message: `Brand ${brandUser?.name ?? 'Unknown'} sent order details for "${productName}" (${quantity} units).`,
+      title: 'New Order Received!',
+      message: `Brand ${brandUser?.name ?? 'Unknown'} sent order details for "${productName}" (${quantity} units).`,
       type: 'order',
       data: {
-          orderId: order._id,  // ✅ ضيف
+        orderId: order._id,  // ✅ ضيف
         requestId: order._id,
         productName,
         quantity,
         selectedSize,
         selectedColor,
         notes,
-       productData,  // ✅ أضيفي السطر ده
+        productData,  // ✅ أضيفي السطر ده
         brandId: req.user.userId,
         brandName: brandUser?.name ?? 'Unknown Brand',
         brandLogo: brandProfile?.logo ?? '',
-        
+
         // ✅ تفاصيل البراند
         brandDescription: brandProfile?.description ?? '',
         brandLocation: brandProfile?.location ?? '',
@@ -94,10 +94,15 @@ router.put('/:id/status', auth, async (req, res) => {
     const order = await Order.findById(req.params.id);
     if (!order) return res.status(404).json({ message: "Order not found" });
 
+    // Only factory owner can update
+    const factoryProfile = await FactoryProfile.findOne({ userId: req.user.userId });
+    if (!factoryProfile || order.factory !== factoryProfile._id.toString()) {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
     order.status = status;
     await order.save();
 
-    const factoryProfile = await FactoryProfile.findOne({ userId: req.user.userId });
     const brandUser = await User.findById(order.brand);
     const brandProfile = await BrandProfile.findOne({ userId: order.brand });
 
@@ -109,13 +114,14 @@ router.put('/:id/status', auth, async (req, res) => {
         : `Your order for "${order.productName}" was declined by the factory.`,
       type: 'order',
       data: {
-        orderId: order._id,
+        orderId: order._id.toString(),
+        requestId: order._id.toString(),
         productName: order.productName,
+        quantity: order.quantity,
         status,
-       factoryId: factoryProfile?._id,
-
+        factoryId: factoryProfile?._id?.toString() ?? '',
         factoryName: factoryProfile?.factoryName ?? '',
-        factoryLogo: factoryProfile?.imageUrl ?? '',
+        factoryLogo: factoryProfile?.logo ?? factoryProfile?.imageUrl ?? '',
         brandName: brandUser?.name ?? '',
         brandLogo: brandProfile?.logo ?? '',
         brandDescription: brandProfile?.description ?? '',
