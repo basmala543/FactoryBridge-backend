@@ -37,7 +37,7 @@ exports.createRequest = async (req, res) => {
         requestId: request._id.toString(),
         productName,
         quantity,
-        brandName: brandUser?.name ?? brandName,
+        brandName: brandName || brandUser?.name,
         brandId: req.user.userId,
         brandLogo: brandProfile?.logo || null,
         brandDescription: brandProfile?.description || '',
