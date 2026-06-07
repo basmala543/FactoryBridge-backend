@@ -92,16 +92,20 @@ exports.updateStatus = async (req, res) => {
     // If sample request is accepted, create an Order so it appears in factory's active orders
     if (status === 'accepted') {
       try {
+        // Get the FactoryProfile ID (not just the User ID) for proper order association
+        const factoryProfile = await FactoryProfile.findOne({ userId: request.factory });
+        const factoryProfileId = factoryProfile?._id || request.factory;
+
         await Order.create({
           brand: request.brand,
-          factory: request.factory,
+          factory: factoryProfileId,
           productName: request.productName,
           quantity: request.quantity,
           notes: request.notes,
           status: 'accepted',
           isPaidByBrand: false,
         });
-        console.log('Order created from accepted sample request:', request._id);
+        console.log('Order created from accepted sample request:', request._id, 'factory:', factoryProfileId);
       } catch (orderError) {
         console.error('Failed to create order from sample request:', orderError);
         // Don't fail the entire request update if order creation fails
