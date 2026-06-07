@@ -1,5 +1,8 @@
 const Contract = require('../models/Contract');
 const Order = require('../models/Orders');
+const FactoryProfile = require('../models/factoryProfile');
+const BrandProfile = require('../models/brandProfile');
+const User = require('../models/users');
 
 // ✅ لما Factory توافق على الـ Order - يتجنرت Contract تلقائياً
 const createContract = async (orderId) => {
@@ -21,10 +24,30 @@ const getContractByOrder = async (req, res) => {
   try {
     const contract = await Contract.findOne({ order: req.params.orderId })
       .populate('order');
-    
+
     if (!contract) return res.status(404).json({ message: 'Contract not found' });
-    
-    res.json(contract);
+
+    // جيب Factory و Brand profiles
+    const factoryProfile = await FactoryProfile.findOne({ userId: contract.factory });
+    const brandProfile = await BrandProfile.findOne({ userId: contract.brand });
+    const factoryUser = await User.findById(contract.factory);
+    const brandUser = await User.findById(contract.brand);
+
+    res.json({
+      ...contract.toObject(),
+      factoryInfo: {
+        name: factoryProfile?.factoryName ?? '',
+        ownerName: factoryUser?.name ?? '',
+        email: factoryUser?.email ?? '',
+        phone: factoryProfile?.contactInformation ?? '',
+      },
+      brandInfo: {
+        name: brandProfile?.brandName ?? '',
+        representative: brandUser?.name ?? '',
+        email: brandUser?.email ?? '',
+        phone: brandProfile?.contactInformation ?? '',
+      },
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
