@@ -3,6 +3,7 @@ const SampleRequest = require('../models/SampleRequest');
 const Notification = require('../models/Notification');
 const FactoryProfile = require('../models/factoryProfile');
 const BrandProfile = require('../models/brandProfile');
+const Order = require('../models/Orders');
 
 
 exports.createRequest = async (req, res) => {
@@ -86,6 +87,25 @@ exports.updateStatus = async (req, res) => {
 
     if (!request) {
       return res.status(404).json({ message: "Request not found" });
+    }
+
+    // If sample request is accepted, create an Order so it appears in factory's active orders
+    if (status === 'accepted') {
+      try {
+        await Order.create({
+          brand: request.brand,
+          factory: request.factory,
+          productName: request.productName,
+          quantity: request.quantity,
+          notes: request.notes,
+          status: 'accepted',
+          isPaidByBrand: false,
+        });
+        console.log('Order created from accepted sample request:', request._id);
+      } catch (orderError) {
+        console.error('Failed to create order from sample request:', orderError);
+        // Don't fail the entire request update if order creation fails
+      }
     }
 
     const factoryProfile = await FactoryProfile.findOne({ userId: req.user.userId });
