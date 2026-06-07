@@ -6,6 +6,21 @@ const FactoryProfile = require('../models/factoryProfile');
 const BrandProfile = require('../models/brandProfile');
 const authMiddleware = require("../middleware/authMiddleware");
 
+
+
+const multer = require('multer');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const cloudinary = require('cloudinary').v2;
+
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'chat_attachments',
+    resource_type: 'auto',
+  },
+});
+const upload = multer({ storage });
+
 const User = mongoose.models.User || mongoose.model("User", new mongoose.Schema({
   name: String,
   email: String,
@@ -202,6 +217,50 @@ router.delete('/:chatId', authMiddleware, async (req, res) => {
     return res.json({ message: 'Conversation deleted' });
   } catch (err) {
     console.error('❌ DELETE /api/chats/:chatId error:', err);
+    return res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
+
+router.post('/:chatId/attachments', authMiddleware, upload.single('file'), async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { chatId } = req.params;
+    const parts = chatId.split('_');
+    if (parts.length < 2) return res.status(400).json({ message: 'Invalid chatId' });
+    const [idA, idB] = parts;
+    if (userId !== idA && userId !== idB) return res.status(403).json({ message: 'Access denied' });
+
+    const receiverId = userId === idA ? idB : idA;
+    const fileUrl = req.file?.path;
+    const fileName = req.file?.originalname;
+    const fileType = req.file?.mimetype;
+
+    const newMsg = new Message({
+      senderId: userId,
+      receiverId,
+      message: fileName || 'Attachment',
+      attachmentUrl: fileUrl,
+      attachmentName: fileName,
+      attachmentType: fileType,
+    });
+    await newMsg.save();
+
+    return res.status(201).json({
+      data: {
+        id: newMsg._id.toString(),
+        senderId: newMsg.senderId,
+        senderName: 'Me',
+        text: '',
+        attachmentUrl: fileUrl,
+        attachmentName: fileName,
+        attachmentType: fileType,
+        createdAt: newMsg.timestamp,
+        isMe: true,
+      },
+    });
+  } catch (err) {
+    console.error('❌ POST attachment error:', err);
     return res.status(500).json({ message: 'Server error', error: err.message });
   }
 });
