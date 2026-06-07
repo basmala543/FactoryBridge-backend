@@ -10,10 +10,25 @@ const orderSchema = new mongoose.Schema({
   specifications: { type: String },
   notes: { type: String },
   productData: { type: Object },
+  isPaidByBrand: { type: Boolean, default: false },
+  dueDate: { type: Date },
+  type: { type: String },
+  orderId: { type: String },
+  productOption: { type: Object },
   status: {
     type: String,
-    enum: ['pending', 'accepted', 'rejected', 'completed'],
-    default: 'pending'
+    enum: [
+      'pending',
+      'accepted',
+      'rejected',
+      'pending_payment',
+      'in_progress',
+      'waiting_delivery',
+      'out_for_delivery',
+      'delivered',
+      'done',
+    ],
+    default: 'pending',
   },
 }, { timestamps: true });
 

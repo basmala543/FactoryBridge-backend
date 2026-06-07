@@ -35,11 +35,13 @@ const helpRoutes = require("./routes/help");
 const favoriteRoutes = require("./routes/favorites");
 const chatRoutes = require("./routes/chat");
 const sampleRequestsRouter = require('./routes/sampleRequests');
+const factoryOrdersRouter = require('./routes/factoryOrders');
 
 app.use("/api/brand", brandProfileRoutes);
 app.use("/api/help", helpRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/factory", factoryProfileRoutes);
+app.use("/api/factory", factoryOrdersRouter);
 app.use("/api/user/favorites", favoriteRoutes);
 app.use("/api/chats", chatRoutes);
 app.use('/api/reviews', require('./routes/review'));
@@ -200,11 +202,11 @@ if (!process.env.GEMINI_API_KEY) {
   console.warn("⚠️ GEMINI_API_KEY is missing — AI replies will fail");
 }
 
-mongoose 
+mongoose
   .connect(MONGO_URI)
   .then(() => {
     console.log("✅ MongoDB Connected Successfully");
-      // ← أضيفي السطرين دول هنا
+    // ← أضيفي السطرين دول هنا
     Message.updateMany({ isRead: { $exists: false } }, { $set: { isRead: true } })
       .then(() => console.log('✅ Old messages marked as read'))
       .catch(console.error);
@@ -227,6 +229,6 @@ mongoose
     console.log("❌ Mongo Connection Error:", err);
   });
 
-  process.on('unhandledRejection', (reason) => {
+process.on('unhandledRejection', (reason) => {
   console.error('Unhandled Rejection:', JSON.stringify(reason, Object.getOwnPropertyNames(reason)));
 });

@@ -6,7 +6,7 @@ const User = require("../models/users");
 const authMiddleware = require("../middleware/authMiddleware");
 const nodemailer = require("nodemailer");
 const dns = require('node:dns');
-dns.setDefaultResultOrder('ipv4first'); 
+dns.setDefaultResultOrder('ipv4first');
 
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
@@ -16,7 +16,7 @@ const transporter = nodemailer.createTransport({
     user: process.env.GMAIL_USER,
     pass: process.env.GMAIL_PASS,
   },
-  family: 4, 
+  family: 4,
   connectionTimeout: 30000, // زودنا الوقت عشان نضمن الربط
   greetingTimeout: 20000,
   socketTimeout: 30000,
@@ -89,7 +89,7 @@ router.post("/login", async (req, res) => {
       { expiresIn: "1h" }
     );
 
-res.json({ message: "Login success", token: token, role: user.role, _id: user._id });
+    res.json({ message: "Login success", token: token, role: user.role, _id: user._id });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
