@@ -5,21 +5,10 @@ const Message = require("../models/Message");
 const FactoryProfile = require('../models/factoryProfile');
 const BrandProfile = require('../models/brandProfile');
 const authMiddleware = require("../middleware/authMiddleware");
-
-
-
 const multer = require('multer');
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const cloudinary = require('cloudinary').v2;
 
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: 'chat_attachments',
-    resource_type: 'auto',
-  },
-});
-const upload = multer({ storage });
+const upload = multer({ storage: multer.memoryStorage() });
 
 const User = mongoose.models.User || mongoose.model("User", new mongoose.Schema({
   name: String,
@@ -31,7 +20,6 @@ const User = mongoose.models.User || mongoose.model("User", new mongoose.Schema(
 router.get("/", authMiddleware, async (req, res) => {
   try {
     const userId = req.user.userId;
-
     const conversations = await Message.aggregate([
       { $match: { $or: [{ senderId: userId }, { receiverId: userId }] } },
       { $sort: { timestamp: -1 } },
@@ -76,7 +64,6 @@ router.get("/", authMiddleware, async (req, res) => {
     ]);
 
     const participantIds = conversations.map((c) => c.participantId);
-
     const validParticipantIds = participantIds.filter(id =>
       id !== 'ai' && mongoose.Types.ObjectId.isValid(id)
     );
@@ -90,12 +77,8 @@ router.get("/", authMiddleware, async (req, res) => {
     }).select('userId brandName');
 
     const profileMap = {};
-    factoryProfiles.forEach(p => {
-      profileMap[p.userId.toString()] = p.factoryName;
-    });
-    brandProfiles.forEach(p => {
-      profileMap[p.userId.toString()] = p.brandName;
-    });
+    factoryProfiles.forEach(p => { profileMap[p.userId.toString()] = p.factoryName; });
+    brandProfiles.forEach(p => { profileMap[p.userId.toString()] = p.brandName; });
 
     let participants = [];
     try {
@@ -105,16 +88,13 @@ router.get("/", authMiddleware, async (req, res) => {
     } catch (_) {}
 
     const participantMap = {};
-    participants.forEach((p) => {
-      participantMap[p._id.toString()] = p;
-    });
+    participants.forEach((p) => { participantMap[p._id.toString()] = p; });
 
     const result = conversations.map((conv) => {
       const participant = participantMap[conv.participantId] || null;
       const name = conv.participantId === "ai"
         ? "FactoryBridge Support"
         : (profileMap[conv.participantId] || participant?.companyName || participant?.name || "Unknown");
-
       return {
         id: conv._id,
         title: name,
@@ -154,6 +134,9 @@ router.get("/:chatId/messages", authMiddleware, async (req, res) => {
       senderId: m.senderId,
       senderName: m.senderId === userId ? "Me" : "Other",
       text: m.message,
+      attachmentUrl: m.attachmentUrl || null,
+      attachmentName: m.attachmentName || null,
+      attachmentType: m.attachmentType || null,
       createdAt: m.timestamp,
       isMe: m.senderId === userId,
     }));
@@ -197,7 +180,6 @@ router.post("/:chatId/messages", authMiddleware, async (req, res) => {
   }
 });
 
-
 router.delete('/:chatId', authMiddleware, async (req, res) => {
   try {
     const userId = req.user.userId;
@@ -221,7 +203,6 @@ router.delete('/:chatId', authMiddleware, async (req, res) => {
   }
 });
 
-
 router.post('/:chatId/attachments', authMiddleware, upload.single('file'), async (req, res) => {
   try {
     const userId = req.user.userId;
@@ -232,9 +213,20 @@ router.post('/:chatId/attachments', authMiddleware, upload.single('file'), async
     if (userId !== idA && userId !== idB) return res.status(403).json({ message: 'Access denied' });
 
     const receiverId = userId === idA ? idB : idA;
-    const fileUrl = req.file?.path;
-    const fileName = req.file?.originalname;
-    const fileType = req.file?.mimetype;
+
+    const uploadResult = await new Promise((resolve, reject) => {
+      cloudinary.uploader.upload_stream(
+        { folder: 'chat_attachments', resource_type: 'auto' },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
+        }
+      ).end(req.file.buffer);
+    });
+
+    const fileUrl = uploadResult.secure_url;
+    const fileName = req.file.originalname;
+    const fileType = req.file.mimetype;
 
     const newMsg = new Message({
       senderId: userId,
