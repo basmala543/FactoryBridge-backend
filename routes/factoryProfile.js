@@ -345,13 +345,18 @@ router.get("/:id/products", async (req, res) => {
   }
 });
 
-// ================== ADD OFFER ==================
 router.post("/offers", authMiddleware, async (req, res) => {
   try {
     const { title, discountPercent, minimumOrder, description, expiryDate } = req.body;
     const profile = await FactoryProfile.findOneAndUpdate(
       { userId: req.user.userId },
-      { $push: { offers: { title, discountPercent, minimumOrder, description, expiryDate } } },
+      { $push: { offers: { 
+          title, 
+          discountPercent: Number(discountPercent), // ← التعديل هنا
+          minimumOrder, 
+          description, 
+          expiryDate 
+      }}},
       { new: true }
     );
     if (!profile) return res.status(404).json({ message: "Factory profile not found" });
