@@ -69,7 +69,6 @@ const rejectContract = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
 const approveContract = async (req, res) => {
   try {
     const { role } = req.body;
@@ -82,7 +81,6 @@ const approveContract = async (req, res) => {
     if (contract.brandApproved && contract.factoryApproved) {
       contract.status = 'active';
 
-      // ✅ Notification للـ Brand لما Contract يبقى active
       await Notification.create({
         user: contract.brand,
         title: 'Contract Active!',
@@ -97,8 +95,12 @@ const approveContract = async (req, res) => {
     } else if (role === 'brand') {
       contract.status = 'brand_approved';
 
-      // ✅ Notification للـ Factory لما Brand يوافق
-      const factoryProfile = await FactoryProfile.findById(contract.factory);
+      // ✅ الحل - جيب Factory بـ findOne مش findById
+      const factoryProfile = await FactoryProfile.findOne({ 
+        _id: contract.factory  // ✅ أو
+        // userId: contract.factory  // جربي الاتنين
+      });
+      
       if (factoryProfile) {
         await Notification.create({
           user: factoryProfile.userId,
@@ -119,8 +121,9 @@ const approveContract = async (req, res) => {
     await contract.save();
     res.json(contract);
   } catch (err) {
+    console.error('approveContract error:', err); // ✅ أضيفي ده
     res.status(500).json({ message: err.message });
   }
-}
+};
 
 module.exports = { createContract, getContractByOrder, approveContract, rejectContract };
