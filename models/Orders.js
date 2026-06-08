@@ -29,8 +29,7 @@ const orderSchema = new mongoose.Schema({
   totalPrice: { type: Number },
   deposit: { type: Number },
   paymentMethod: { type: String },
-  currency: { type: String, default: 'USD' },
-
+currency: { type: String, default: 'EGP' },
   // ✅ Delivery
   deliveryDate: { type: Date },
   shippingMethod: { type: String },

@@ -10,10 +10,11 @@ const { createContract } = require('../controllers/contractController');
 // البراند يعمل order
 router.post('/create', auth, async (req, res) => {
   try {
-    const { factoryId, productName, quantity, selectedSize, selectedColor, 
-            specifications, notes, productData,
-            materials, manufacturingTime, shippingMethod, deliveryDate } = req.body;
-            
+  const { factoryId, productName, quantity, selectedSize, selectedColor, 
+        specifications, notes, productData,
+        materials, manufacturingTime, shippingMethod, deliveryDate,
+        totalPrice, deposit, paymentMethod, currency } = req.body;
+
     const factoryProfile = await FactoryProfile.findById(factoryId);
     if (!factoryProfile) {
       return res.status(404).json({ message: "Factory not found" });
@@ -35,6 +36,10 @@ const order = await Order.create({
   manufacturingTime,
   shippingMethod,
   deliveryDate,
+  totalPrice,
+  deposit,
+  paymentMethod,
+  currency: currency ?? 'USD',
 });
 
     await Notification.create({
