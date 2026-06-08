@@ -72,7 +72,8 @@ const rejectContract = async (req, res) => {
 const approveContract = async (req, res) => {
   try {
     const { role } = req.body;
-    const contract = await Contract.findById(req.params.id);
+    const contract = await Contract.findById(req.params.id).populate('order');  // ← زيد .populate('order')
+    
     if (!contract) return res.status(404).json({ message: 'Contract not found' });
 
     if (role === 'brand') contract.brandApproved = true;
