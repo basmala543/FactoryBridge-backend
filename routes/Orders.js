@@ -10,8 +10,10 @@ const { createContract } = require('../controllers/contractController');
 // البراند يعمل order
 router.post('/create', auth, async (req, res) => {
   try {
-    const { factoryId, productName, quantity, selectedSize, selectedColor, specifications, notes, productData } = req.body;
-
+    const { factoryId, productName, quantity, selectedSize, selectedColor, 
+            specifications, notes, productData,
+            materials, manufacturingTime, shippingMethod, deliveryDate } = req.body;
+            
     const factoryProfile = await FactoryProfile.findById(factoryId);
     if (!factoryProfile) {
       return res.status(404).json({ message: "Factory not found" });
@@ -19,18 +21,21 @@ router.post('/create', auth, async (req, res) => {
 
     const brandUser = await User.findById(req.user.userId);
     const brandProfile = await BrandProfile.findOne({ userId: req.user.userId });
-
-    const order = await Order.create({
-      brand: req.user.userId,
-      factory: factoryId,
-      productName,
-      quantity,
-      selectedSize,
-      selectedColor,
-      specifications,
-      notes,
-      productData,
-    });
+const order = await Order.create({
+  brand: req.user.userId,
+  factory: factoryId,
+  productName,
+  quantity,
+  selectedSize,
+  selectedColor,
+  specifications,
+  notes,
+  productData,
+  materials,
+  manufacturingTime,
+  shippingMethod,
+  deliveryDate,
+});
 
     await Notification.create({
       user: factoryProfile.userId,
@@ -102,7 +107,7 @@ router.put('/:id/status', auth, async (req, res) => {
 
     order.status = status;
     await order.save();
-    
+
 if (status === 'accepted') {
   await createContract(order._id);
 }
