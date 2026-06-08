@@ -11,4 +11,6 @@ router.put('/:id/approve', approveContract);
 // ارفض الـ Contract
 router.put('/:id/reject', rejectContract);
 
+router.post('/:id/notify-brand', notifyBrand);
+
 module.exports = router;

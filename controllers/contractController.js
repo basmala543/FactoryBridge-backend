@@ -126,5 +126,26 @@ const approveContract = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+const notifyBrand = async (req, res) => {
+  try {
+    const contract = await Contract.findById(req.params.id).populate('order');
+    if (!contract) return res.status(404).json({ message: 'Contract not found' });
 
-module.exports = { createContract, getContractByOrder, approveContract, rejectContract };
+    await Notification.create({
+      user: contract.brand,
+      title: 'Contract is Active!',
+      message: 'The factory has signed the contract. You can now proceed to payment.',
+      type: 'contract',
+      data: {
+        orderId: contract.order?._id?.toString() ?? contract.order?.toString() ?? '',
+        contractId: contract._id.toString(),
+      },
+    });
+
+    res.json({ message: 'Brand notified successfully' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+module.exports = { createContract, getContractByOrder, approveContract, rejectContract, notifyBrand };
