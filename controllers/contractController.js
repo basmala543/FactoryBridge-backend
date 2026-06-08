@@ -73,7 +73,7 @@ const approveContract = async (req, res) => {
   try {
     const { role } = req.body;
     const contract = await Contract.findById(req.params.id).populate('order');  // ← زيد .populate('order')
-    
+
     if (!contract) return res.status(404).json({ message: 'Contract not found' });
 
     if (role === 'brand') contract.brandApproved = true;
@@ -88,7 +88,7 @@ const approveContract = async (req, res) => {
         message: 'Both parties approved the contract. You can now proceed to payment.',
         type: 'contract',
         data: {
-          orderId: contract.order.toString(),
+         orderId: contract.order?._id?.toString() ?? contract.order?.toString() ?? '',
           contractId: contract._id.toString(),
         },
       });
@@ -109,7 +109,7 @@ const approveContract = async (req, res) => {
           message: 'The brand approved the contract. Please review and sign.',
           type: 'contract',
           data: {
-            orderId: contract.order.toString(),
+           orderId: contract.order?._id?.toString() ?? contract.order?.toString() ?? '',
             contractId: contract._id.toString(),
           },
         });
