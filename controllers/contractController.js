@@ -3,6 +3,8 @@ const Order = require('../models/Orders');
 const FactoryProfile = require('../models/factoryProfile');
 const BrandProfile = require('../models/brandProfile');
 const User = require('../models/users');
+const Notification = require('../models/Notification');
+
 
 // ✅ لما Factory توافق على الـ Order - يتجنرت Contract تلقائياً
 const createContract = async (orderId) => {
@@ -53,32 +55,6 @@ const factoryUser = await User.findById(factoryProfile?.userId);
   }
 };
 
-// ✅ Brand أو Factory يوافقوا
-const approveContract = async (req, res) => {
-  try {
-    const { role } = req.body; // 'brand' or 'factory'
-    const contract = await Contract.findById(req.params.id);
-    
-    if (!contract) return res.status(404).json({ message: 'Contract not found' });
-
-    if (role === 'brand') contract.brandApproved = true;
-    if (role === 'factory') contract.factoryApproved = true;
-
-    // لو الاتنين وافقوا
-    if (contract.brandApproved && contract.factoryApproved) {
-      contract.status = 'active';
-    } else if (role === 'brand') {
-      contract.status = 'brand_approved';
-    } else {
-      contract.status = 'factory_approved';
-    }
-
-    await contract.save();
-    res.json(contract);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
 
 // ✅ رفض الـ Contract
 const rejectContract = async (req, res) => {
@@ -93,5 +69,58 @@ const rejectContract = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+const approveContract = async (req, res) => {
+  try {
+    const { role } = req.body;
+    const contract = await Contract.findById(req.params.id);
+    if (!contract) return res.status(404).json({ message: 'Contract not found' });
+
+    if (role === 'brand') contract.brandApproved = true;
+    if (role === 'factory') contract.factoryApproved = true;
+
+    if (contract.brandApproved && contract.factoryApproved) {
+      contract.status = 'active';
+
+      // ✅ Notification للـ Brand لما Contract يبقى active
+      await Notification.create({
+        user: contract.brand,
+        title: 'Contract Active!',
+        message: 'Both parties approved the contract. You can now proceed to payment.',
+        type: 'contract',
+        data: {
+          orderId: contract.order.toString(),
+          contractId: contract._id.toString(),
+        },
+      });
+
+    } else if (role === 'brand') {
+      contract.status = 'brand_approved';
+
+      // ✅ Notification للـ Factory لما Brand يوافق
+      const factoryProfile = await FactoryProfile.findById(contract.factory);
+      if (factoryProfile) {
+        await Notification.create({
+          user: factoryProfile.userId,
+          title: 'Brand Signed the Contract!',
+          message: 'The brand approved the contract. Please review and sign.',
+          type: 'contract',
+          data: {
+            orderId: contract.order.toString(),
+            contractId: contract._id.toString(),
+          },
+        });
+      }
+
+    } else {
+      contract.status = 'factory_approved';
+    }
+
+    await contract.save();
+    res.json(contract);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+}
 
 module.exports = { createContract, getContractByOrder, approveContract, rejectContract };
