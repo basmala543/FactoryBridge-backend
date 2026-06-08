@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getContractByOrder, approveContract, rejectContract } = require('../controllers/contractController');
+const { createContract, getContractByOrder, approveContract, rejectContract, notifyBrand } = require('../controllers/contractController');
 
 // جيب الـ Contract بتاع Order معين
 router.get('/order/:orderId', getContractByOrder);
