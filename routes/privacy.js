@@ -267,7 +267,14 @@ router.get("/admin/reports", authMiddleware, async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
-
+router.patch("/admin/reports/:id", authMiddleware, async (req, res) => {
+  try {
+    await Report.findByIdAndUpdate(req.params.id, { status: req.body.status });
+    res.json({ message: "Report updated" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 
 
 module.exports = router;
