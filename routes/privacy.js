@@ -253,12 +253,12 @@ router.post("/report", authMiddleware, async (req, res) => {
       reason,
       description: description || "",
     });
-    await Notification.create({
+await Notification.create({
   user: req.user.userId,
-message: `Your report regarding "${reason}" has been received. We'll review it and get back to you within 48 hours.`,
+  title: 'Report Received',
+  message: `Your report regarding "${reason}" has been received. We'll review it and get back to you within 48 hours.`,
   type: 'report',
 });
-
 
     res.json({ message: "Report submitted successfully" });
   } catch (err) {
