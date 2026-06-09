@@ -65,23 +65,38 @@ router.post("/signup", async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
+// ================== LOGIN (نسخة محدّثة بتحفظ الـ session) ==================
+// استبدلي الـ login route الموجود في auth.js بالكود ده
 
-// ================== LOGIN ==================
 router.post("/login", async (req, res) => {
   try {
     const { Email, Password } = req.body;
 
     const user = await User.findOne({ email: Email });
-
-    if (!user) {
-      return res.status(400).json({ message: "User not found" });
-    }
+    if (!user) return res.status(400).json({ message: "User not found" });
 
     const isMatch = await bcrypt.compare(Password, user.password);
+    if (!isMatch) return res.status(400).json({ message: "Wrong password" });
 
-    if (!isMatch) {
-      return res.status(400).json({ message: "Wrong password" });
+    // ── حفظ الـ login session ──
+    const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress || "";
+    const userAgent = req.headers["user-agent"] || "";
+
+    // استخراج بسيط لاسم الجهاز من الـ User-Agent
+    let device = "Unknown Device";
+    if (/Mobile|Android|iPhone/i.test(userAgent)) device = "Mobile";
+    else if (/Tablet|iPad/i.test(userAgent)) device = "Tablet";
+    else if (/Windows|Mac|Linux/i.test(userAgent)) device = "Desktop";
+
+    user.loginSessions.push({ device, ip });
+
+    // احتفظ بآخر 20 session بس
+    if (user.loginSessions.length > 20) {
+      user.loginSessions = user.loginSessions.slice(-20);
     }
+
+    await user.save();
+    // ──────────────────────────
 
     const token = jwt.sign(
       { userId: user._id, email: user.email, role: user.role },
@@ -89,14 +104,10 @@ router.post("/login", async (req, res) => {
       { expiresIn: "1h" }
     );
 
-    res.json({ message: "Login success", token: token, role: user.role, _id: user._id });
+    res.json({ message: "Login success", token, role: user.role, _id: user._id });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
-});
-
-router.get("/profile", authMiddleware, (req, res) => {
-  res.json({ message: "User authenticated", user: req.user });
 });
 
 // ================== FORGOT PASSWORD + SEND OTP ==================
