@@ -5,6 +5,7 @@ const authMiddleware = require("../middleware/authMiddleware");
 const nodemailer = require("nodemailer");
 const crypto = require("crypto");
 const Report = require("../models/Report");
+const Notification = require("../models/Notification");
 
 const transporter = nodemailer.createTransport({
   host: "smtp.gmail.com",
@@ -252,6 +253,12 @@ router.post("/report", authMiddleware, async (req, res) => {
       reason,
       description: description || "",
     });
+    await Notification.create({
+  user: req.user.userId,
+message: `Your report regarding "${reason}" has been received. We'll review it and get back to you within 48 hours.`,
+  type: 'report',
+});
+
 
     res.json({ message: "Report submitted successfully" });
   } catch (err) {
