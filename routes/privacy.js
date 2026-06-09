@@ -4,6 +4,7 @@ const User = require("../models/users");
 const authMiddleware = require("../middleware/authMiddleware");
 const nodemailer = require("nodemailer");
 const crypto = require("crypto");
+const Report = require("../models/Report");
 
 const transporter = nodemailer.createTransport({
   host: "smtp.gmail.com",
@@ -238,35 +239,18 @@ router.get("/blocked-users", authMiddleware, async (req, res) => {
 // بيبعت report عن مشكلة أو مستخدم مشبوه
 router.post("/report", authMiddleware, async (req, res) => {
   try {
-    const { reportedUserId, reason, description } = req.body;
-
-    if (!reason) {
-      return res.status(400).json({ message: "Reason is required" });
-    }
+    const { reason, description } = req.body;
+    if (!reason) return res.status(400).json({ message: "Reason is required" });
 
     const reporter = await User.findById(req.user.userId).select("name email");
     if (!reporter) return res.status(404).json({ message: "User not found" });
 
-    let reportedUserInfo = "N/A";
-    if (reportedUserId) {
-      const reportedUser = await User.findById(reportedUserId).select("name email");
-      if (reportedUser) {
-        reportedUserInfo = `${reportedUser.name} (${reportedUser.email})`;
-      }
-    }
-
-    await transporter.sendMail({
-      from: process.env.GMAIL_USER,
-      to: process.env.GMAIL_USER,
-      subject: `[FactoryBridge] Problem Report - ${reason}`,
-      html: `
-        <h2>Problem Report</h2>
-        <p><strong>Reporter:</strong> ${reporter.name} (${reporter.email})</p>
-        <p><strong>Reported User:</strong> ${reportedUserInfo}</p>
-        <p><strong>Reason:</strong> ${reason}</p>
-        <p><strong>Description:</strong> ${description || "No description provided"}</p>
-        <p><strong>Time:</strong> ${new Date().toISOString()}</p>
-      `,
+    await Report.create({
+      reporterName:  reporter.name,
+      reporterEmail: reporter.email,
+      reporterId:    req.user.userId,
+      reason,
+      description: description || "",
     });
 
     res.json({ message: "Report submitted successfully" });
@@ -274,5 +258,16 @@ router.post("/report", authMiddleware, async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
+
+router.get("/admin/reports", authMiddleware, async (req, res) => {
+  try {
+    const reports = await Report.find().sort({ createdAt: -1 });
+    res.json({ reports });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+
 
 module.exports = router;
