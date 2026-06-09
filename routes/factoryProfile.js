@@ -169,10 +169,21 @@ router.get("/by-category", async (req, res) => {
     const category = req.query.category;
     if (!category)
       return res.status(400).json({ message: "Category is required" });
+    const Review = require("../models/review");
     const results = await FactoryProfile.find({
       productCategories: { $regex: category, $options: "i" },
     });
-    res.status(200).json(results);
+    const resultsWithRating = await Promise.all(
+      results.map(async (factory) => {
+        const reviews = await Review.find({ factory: factory._id.toString() });
+        const avgRating =
+          reviews.length > 0
+            ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+            : 0;
+        return { ...factory.toObject(), rating: avgRating };
+      })
+    );
+    res.status(200).json(resultsWithRating);
   } catch (error) {
     res.status(500).json({ message: "خطأ في جلب المصانع", error });
   }
