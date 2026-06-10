@@ -292,5 +292,41 @@ router.post("/upload-screenshot", authMiddleware, upload.single("file"), async (
   }
  
 });
+router.post("/", verifyToken, async (req, res) => {
+  try {
+    const { reason, description, factoryName, orderId, screenshotUrl } = req.body;
+
+    const report = new Report({
+      reporterName:  req.user.name,
+      reporterEmail: req.user.email,
+      reporterId:    req.user._id,
+      factoryName:   factoryName || "",
+      orderId:       orderId || undefined,
+      reason,
+      description,
+      screenshotUrl,
+    });
+
+    await report.save();
+    res.status(201).json({ success: true, message: "Report submitted successfully" });
+  } catch (err) {
+    console.error("Report error:", err);
+    res.status(500).json({ success: false, message: "Failed to submit report" });
+  }
+});
+
+// GET /api/reports  ← للـ Admin Dashboard
+router.get("/", verifyToken, async (req, res) => {
+  try {
+    const reports = await Report.find()
+      .populate("reporterId", "name email")
+      .populate("orderId", "productType quantity")
+      .sort({ createdAt: -1 });
+
+    res.json({ success: true, data: reports, count: reports.length });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
 
 module.exports = router;
