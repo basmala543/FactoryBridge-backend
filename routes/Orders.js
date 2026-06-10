@@ -7,13 +7,36 @@ const Notification = require('../models/Notification');
 const User = require('../models/users');
 const auth = require('../middleware/authMiddleware');
 const { createContract } = require('../controllers/contractController');
+
+async function enrichBrandOrders(orders) {
+  const factoryIds = [...new Set(orders.map((order) => order.factory).filter(Boolean))];
+  const factoryProfiles = await FactoryProfile.find({ _id: { $in: factoryIds } });
+  const factoryMap = new Map();
+  factoryProfiles.forEach((factory) => {
+    const key = factory._id?.toString?.() ?? factory._id;
+    if (key) factoryMap.set(key, factory);
+  });
+
+  return orders.map((order) => {
+    const obj = order.toObject();
+    const factoryId = order.factory?.toString?.() ?? order.factory;
+    const factoryProfile = factoryMap.get(factoryId);
+    if (factoryProfile) {
+      obj.factoryName = factoryProfile.factoryName || factoryProfile.name || '';
+      obj.factoryLogo = factoryProfile.logo || factoryProfile.imageUrl || '';
+      obj.factoryLocation = factoryProfile.location || '';
+    }
+    return obj;
+  });
+}
+
 // البراند يعمل order
 router.post('/create', auth, async (req, res) => {
   try {
-  const { factoryId, productName, quantity, selectedSize, selectedColor, 
-        specifications, notes, productData,
-        materials, manufacturingTime, shippingMethod, deliveryDate,
-        totalPrice, deposit, paymentMethod, currency } = req.body;
+    const { factoryId, productName, quantity, selectedSize, selectedColor,
+      specifications, notes, productData,
+      materials, manufacturingTime, shippingMethod, deliveryDate,
+      totalPrice, deposit, paymentMethod, currency } = req.body;
 
     const factoryProfile = await FactoryProfile.findById(factoryId);
     if (!factoryProfile) {
@@ -22,25 +45,25 @@ router.post('/create', auth, async (req, res) => {
 
     const brandUser = await User.findById(req.user.userId);
     const brandProfile = await BrandProfile.findOne({ userId: req.user.userId });
-const order = await Order.create({
-  brand: req.user.userId,
-  factory: factoryId,
-  productName,
-  quantity,
-  selectedSize,
-  selectedColor,
-  specifications,
-  notes,
-  productData,
-  materials,
-  manufacturingTime,
-  shippingMethod,
-  deliveryDate,
-  totalPrice,
-  deposit,
-  paymentMethod,
-  currency: currency ?? 'USD',
-});
+    const order = await Order.create({
+      brand: req.user.userId,
+      factory: factoryId,
+      productName,
+      quantity,
+      selectedSize,
+      selectedColor,
+      specifications,
+      notes,
+      productData,
+      materials,
+      manufacturingTime,
+      shippingMethod,
+      deliveryDate,
+      totalPrice,
+      deposit,
+      paymentMethod,
+      currency: currency ?? 'USD',
+    });
 
     await Notification.create({
       user: factoryProfile.userId,
@@ -79,7 +102,8 @@ const order = await Order.create({
 router.get('/my-orders', auth, async (req, res) => {
   try {
     const orders = await Order.find({ brand: req.user.userId }).sort({ createdAt: -1 });
-    res.json({ data: orders });
+    const enriched = await enrichBrandOrders(orders);
+    res.json({ data: enriched });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -88,9 +112,10 @@ router.get('/my-orders', auth, async (req, res) => {
 // تفاصيل order
 router.get('/:id', auth, async (req, res) => {
   try {
-    const order = await Order.findById(req.params.id);
+    const order = await Order.findOne({ _id: req.params.id, brand: req.user.userId });
     if (!order) return res.status(404).json({ message: "Order not found" });
-    res.json({ data: order });
+    const [enriched] = await enrichBrandOrders([order]);
+    res.json({ data: enriched });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -113,9 +138,9 @@ router.put('/:id/status', auth, async (req, res) => {
     order.status = status;
     await order.save();
 
-if (status === 'accepted') {
-  await createContract(order._id);
-}
+    if (status === 'accepted') {
+      await createContract(order._id);
+    }
     const brandUser = await User.findById(order.brand);
     const brandProfile = await BrandProfile.findOne({ userId: order.brand });
 
