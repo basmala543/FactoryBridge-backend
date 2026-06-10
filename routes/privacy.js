@@ -6,6 +6,9 @@ const nodemailer = require("nodemailer");
 const crypto = require("crypto");
 const Report = require("../models/Report");
 const Notification = require("../models/Notification");
+const cloudinary = require("cloudinary").v2;
+const multer = require("multer");
+const upload = multer({ storage: multer.memoryStorage() });
 
 const transporter = nodemailer.createTransport({
   host: "smtp.gmail.com",
@@ -240,53 +243,54 @@ router.get("/blocked-users", authMiddleware, async (req, res) => {
 // بيبعت report عن مشكلة أو مستخدم مشبوه
 router.post("/report", authMiddleware, async (req, res) => {
   try {
-const { reason, description, factoryId, orderId, factoryName } = req.body;
+    const { reason, description, factoryId, orderId, factoryName, screenshotUrl } = req.body;
 
     if (!reason) return res.status(400).json({ message: "Reason is required" });
 
     const reporter = await User.findById(req.user.userId).select("name email");
     if (!reporter) return res.status(404).json({ message: "User not found" });
 
-  await Report.create({
-  reporterName:  reporter.name,
-  reporterEmail: reporter.email,
-  reporterId:    req.user.userId,
-  factoryId:     factoryId || null,
-    factoryName:   factoryName || "",   // ← ضيفي دي
-  orderId:       orderId || null,
-  reason,
-  description: description || "",
-});
+    await Report.create({
+      reporterName:  reporter.name,
+      reporterEmail: reporter.email,
+      reporterId:    req.user.userId,
+      factoryId:     factoryId || null,
+      factoryName:   factoryName || "",
+      orderId:       orderId || null,
+      reason,
+      description:   description || "",
+      screenshotUrl: screenshotUrl || "",
+    });
 
-await Notification.create({
-  user: req.user.userId,
-  title: 'Report Received',
-  message: `Your report regarding "${reason}" has been received. We'll review it and get back to you within 48 hours.`,
-  type: 'report',
-});
+    await Notification.create({
+      user: req.user.userId,
+      title: 'Report Received',
+      message: `Your report regarding "${reason}" has been received. We'll review it and get back to you within 48 hours.`,
+      type: 'report',
+    });
 
     res.json({ message: "Report submitted successfully" });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
-
-router.get("/admin/reports", authMiddleware, async (req, res) => {
+router.post("/upload-screenshot", authMiddleware, upload.single("file"), async (req, res) => {
   try {
-    const reports = await Report.find().sort({ createdAt: -1 });
-    res.json({ reports });
+    const result = await new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        { folder: "reports" },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
+        }
+      );
+      stream.end(req.file.buffer);
+    });
+    res.json({ url: result.secure_url });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: "Upload failed" });
   }
+ 
 });
-router.patch("/admin/reports/:id", authMiddleware, async (req, res) => {
-  try {
-    await Report.findByIdAndUpdate(req.params.id, { status: req.body.status });
-    res.json({ message: "Report updated" });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
 
 module.exports = router;
