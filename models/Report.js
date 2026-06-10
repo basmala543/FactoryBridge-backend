@@ -4,6 +4,8 @@ const reportSchema = new mongoose.Schema({
   reporterName:  { type: String, required: true },
   reporterEmail: { type: String, required: true },
   reporterId:    { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+factoryId:     { type: mongoose.Schema.Types.ObjectId, ref: "Factory" }, // ← جديد
+  orderId:       { type: mongoose.Schema.Types.ObjectId, ref: "Order" },   // ← جديد
   reason:        { type: String, required: true },
   description:   { type: String, default: "" },
   status:        { type: String, enum: ["pending", "reviewed", "resolved"], default: "pending" },

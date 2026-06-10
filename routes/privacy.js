@@ -240,19 +240,22 @@ router.get("/blocked-users", authMiddleware, async (req, res) => {
 // بيبعت report عن مشكلة أو مستخدم مشبوه
 router.post("/report", authMiddleware, async (req, res) => {
   try {
-    const { reason, description } = req.body;
+const { reason, description, factoryId, orderId } = req.body;
     if (!reason) return res.status(400).json({ message: "Reason is required" });
 
     const reporter = await User.findById(req.user.userId).select("name email");
     if (!reporter) return res.status(404).json({ message: "User not found" });
 
-    await Report.create({
-      reporterName:  reporter.name,
-      reporterEmail: reporter.email,
-      reporterId:    req.user.userId,
-      reason,
-      description: description || "",
-    });
+  await Report.create({
+  reporterName:  reporter.name,
+  reporterEmail: reporter.email,
+  reporterId:    req.user.userId,
+  factoryId:     factoryId || null,
+  orderId:       orderId || null,
+  reason,
+  description: description || "",
+});
+
 await Notification.create({
   user: req.user.userId,
   title: 'Report Received',
