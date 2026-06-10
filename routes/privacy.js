@@ -292,6 +292,28 @@ router.post("/upload-screenshot", authMiddleware, upload.single("file"), async (
   }
  
 });
+// GET /privacy/admin/reports ← للـ Admin Dashboard
+router.get("/admin/reports", authMiddleware, async (req, res) => {
+  try {
+    const reports = await Report.find()
+      .sort({ createdAt: -1 });
+    res.json({ reports });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// PATCH /privacy/admin/reports/:id ← mark as resolved
+router.patch("/admin/reports/:id", authMiddleware, async (req, res) => {
+  try {
+    const { status } = req.body;
+    await Report.findByIdAndUpdate(req.params.id, { status });
+    res.json({ message: "Report updated" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 
 
 module.exports = router;
