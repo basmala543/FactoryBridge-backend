@@ -31,8 +31,9 @@ const getContractByOrder = async (req, res) => {
 
     // جيب Factory و Brand profiles
 const factoryProfile = await FactoryProfile.findById(contract.factory);
-    const brandProfile = await BrandProfile.findOne({ userId: contract.brand });
-const factoryUser = await User.findById(factoryProfile?.userId);
+const brandProfile = await BrandProfile.findOne({ userId: contract.brand }) 
+                  ?? await BrandProfile.findById(contract.brand);
+                  const factoryUser = await User.findById(factoryProfile?.userId);
     const brandUser = await User.findById(contract.brand);
 
     res.json({
