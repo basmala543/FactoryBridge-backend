@@ -125,7 +125,9 @@ router.get("/:chatId/messages", authMiddleware, async (req, res) => {
     const parts = chatId.split("_");
     if (parts.length < 2) return res.status(400).json({ message: "Invalid chatId format" });
     const [idA, idB] = parts;
-    if (userId !== idA && userId !== idB) return res.status(403).json({ message: "Access denied" });
+const isAdmin = await isAdminUser(userId);
+if (!isAdmin && userId !== idA && userId !== idB)
+  return res.status(403).json({ message: "Access denied" });
 
     const messages = await Message.find({
       $or: [
@@ -163,7 +165,10 @@ router.post("/:chatId/messages", authMiddleware, async (req, res) => {
     const parts = chatId.split("_");
     if (parts.length < 2) return res.status(400).json({ message: "Invalid chatId format" });
     const [idA, idB] = parts;
-    if (userId !== idA && userId !== idB) return res.status(403).json({ message: "Access denied" });
+// بعد - يسمح للأدمن يدخل أي chat
+const isAdmin = await isAdminUser(userId);
+if (!isAdmin && userId !== idA && userId !== idB) 
+  return res.status(403).json({ message: "Access denied" });
 
     const receiverId = userId === idA ? idB : idA;
     const newMsg = new Message({ senderId: userId, receiverId, message: message.trim() });
@@ -192,8 +197,10 @@ router.delete('/:chatId', authMiddleware, async (req, res) => {
     const parts = chatId.split('_');
     if (parts.length < 2) return res.status(400).json({ message: 'Invalid chatId' });
     const [idA, idB] = parts;
-    if (userId !== idA && userId !== idB) return res.status(403).json({ message: 'Access denied' });
-
+    const isAdmin = await isAdminUser(userId);
+    if (!isAdmin && userId !== idA && userId !== idB)
+      return res.status(403).json({ message: 'Access denied' });
+    
     await Message.deleteMany({
       $or: [
         { senderId: idA, receiverId: idB },
