@@ -277,4 +277,27 @@ router.put('/:id/pay-remaining', auth, async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
+router.put('/:id/refund', auth, async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+
+    order.isPaidByBrand = false;
+    order.isRemainingPaid = false;
+    order.status = 'rejected';
+    await order.save();
+
+    await Notification.create({
+      user: order.brand,
+      title: 'Refund Processed',
+      message: `Your payment for "${order.productName}" has been refunded by admin due to a reported issue.`,
+      type: 'order',
+      data: { orderId: order._id.toString() },
+    });
+
+    res.json({ message: 'Refund processed', data: order });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 module.exports = router;
