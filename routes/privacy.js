@@ -319,7 +319,7 @@ router.patch("/admin/reports/:id", authMiddleware, async (req, res) => {
 // GET /api/privacy/factory-owner-by-name/:name
 router.get('/factory-owner-by-name/:name', authMiddleware, async (req, res) => {  try {
     const factory = await FactoryProfile.findOne({
-      factoryName: { $regex: new RegExp(`^${req.params.name}$`, 'i') }
+factoryName: { $regex: new RegExp(req.params.name, 'i') }
     }).select('user factoryName');
     
     if (!factory) return res.status(404).json({ message: 'Factory not found' });
