@@ -317,14 +317,16 @@ router.patch("/admin/reports/:id", authMiddleware, async (req, res) => {
 });
 
 // GET /api/privacy/factory-owner-by-name/:name
-router.get('/factory-owner-by-name/:name', authMiddleware, async (req, res) => {  try {
+// ✅ صح
+router.get('/factory-owner-by-name/:name', authMiddleware, async (req, res) => {
+  try {
     const factory = await FactoryProfile.findOne({
-factoryName: { $regex: new RegExp(req.params.name, 'i') }
-    }).select('user factoryName');
-    
+      factoryName: { $regex: new RegExp(req.params.name, 'i') }
+    }).select('userId factoryName');
+
     if (!factory) return res.status(404).json({ message: 'Factory not found' });
-    
-    res.json({ userId: factory.user.toString(), factoryName: factory.factoryName });
+
+    res.json({ userId: factory.userId.toString(), factoryName: factory.factoryName });
   } catch (e) {
     res.status(500).json({ message: 'Server error' });
   }
