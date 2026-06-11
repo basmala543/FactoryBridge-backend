@@ -101,9 +101,9 @@ router.post('/create', auth, async (req, res) => {
 // البراند يشوف orders بتاعته
 router.get('/my-orders', auth, async (req, res) => {
   try {
-        const { factoryId } = req.query;  // ← السطر الجديد
-    const filter = { brandId: req.user._id };  // أو userId حسب الـ schema
-    if (factoryId) filter.factoryId = factoryId;  // ← السطر الجديد
+    const { factoryId } = req.query;
+    const filter = { brand: req.user.userId };
+    if (factoryId) filter.factory = factoryId;
 
     const orders = await Order.find(filter).sort({ createdAt: -1 });
     const enriched = await enrichBrandOrders(orders);
