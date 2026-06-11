@@ -54,6 +54,12 @@ const userSchema = new mongoose.Schema({
     type: [loginSessionSchema],
     default: [],
   },
+    // ================== SUSPENSION ==================
+  isSuspended: { type: Boolean, default: false },
+  suspendedAt: { type: Date, default: null },
+  suspendReason: { type: String, default: null },
 });
+
+
 
 module.exports = mongoose.model("User", userSchema);

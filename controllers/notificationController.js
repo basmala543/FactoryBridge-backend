@@ -9,8 +9,7 @@ exports.getNotifications = async (req, res) => {
       data: notifications.map(n => {
         const obj = n.toObject();
         if (obj.data?.requestId) {
-          obj.data.requestId = obj.data.requestId.toString(); // ✅
-        }
+          obj.data.requestId = obj.data.requestId.toString(
         return { ...obj, id: n._id.toString() };
       }) 
     });

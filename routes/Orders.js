@@ -282,17 +282,39 @@ router.put('/:id/refund', auth, async (req, res) => {
     const order = await Order.findById(req.params.id);
     if (!order) return res.status(404).json({ message: 'Order not found' });
 
+    // ── جيب تفاصيل الفاكتوري ──
+    const factoryProfile = await FactoryProfile.findById(order.factory);
+    const brandProfile = await BrandProfile.findOne({ userId: order.brand });
+
+    const totalPaid = order.isRemainingPaid
+      ? (order.totalPrice ?? 0)
+      : order.isPaidByBrand
+        ? (order.deposit ?? 0)
+        : 0;
+
+    const currency = order.currency ?? 'USD';
+
     order.isPaidByBrand = false;
     order.isRemainingPaid = false;
     order.status = 'rejected';
     await order.save();
 
+    // ── notification للبراند ──
     await Notification.create({
       user: order.brand,
-      title: 'Refund Processed',
-      message: `Your payment for "${order.productName}" has been refunded by admin due to a reported issue.`,
-      type: 'order',
-      data: { orderId: order._id.toString() },
+      title: '💰 Refund Processed',
+      message: `Your refund of ${totalPaid} ${currency} for "${order.productName}" (${order.quantity} units) from ${factoryProfile?.factoryName ?? 'the factory'} has been processed by admin due to: ${req.body.reason ?? 'a reported issue'}.`,
+      type: 'refund',
+      data: {
+        orderId: order._id.toString(),
+        productName: order.productName,
+        quantity: order.quantity,
+        totalPaid,
+        currency,
+        factoryName: factoryProfile?.factoryName ?? '',
+        factoryLogo: factoryProfile?.logo ?? '',
+        reason: req.body.reason ?? '',
+      },
     });
 
     res.json({ message: 'Refund processed', data: order });

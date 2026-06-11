@@ -78,11 +78,18 @@ router.post("/login", async (req, res) => {
     const isMatch = await bcrypt.compare(Password, user.password);
     if (!isMatch) return res.status(400).json({ message: "Wrong password" });
 
+    // ================== SUSPENSION CHECK ==================
+    if (user.isSuspended) {
+      return res.status(403).json({ 
+        message: "Your account has been suspended due to: " + (user.suspendReason || "policy violation") 
+      });
+    }
+    // ======================================================
+
     // ── حفظ الـ login session ──
     const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress || "";
     const userAgent = req.headers["user-agent"] || "";
 
-    // استخراج بسيط لاسم الجهاز من الـ User-Agent
     let device = "Unknown Device";
     if (/Mobile|Android|iPhone/i.test(userAgent)) device = "Mobile";
     else if (/Tablet|iPad/i.test(userAgent)) device = "Tablet";
@@ -90,13 +97,11 @@ router.post("/login", async (req, res) => {
 
     user.loginSessions.push({ device, ip });
 
-    // احتفظ بآخر 20 session بس
     if (user.loginSessions.length > 20) {
       user.loginSessions = user.loginSessions.slice(-20);
     }
 
     await user.save();
-    // ──────────────────────────
 
     const token = jwt.sign(
       { userId: user._id, email: user.email, role: user.role },
@@ -255,6 +260,23 @@ router.delete("/admin/users/:id", async (req, res) => {
   try {
     await User.findByIdAndDelete(req.params.id);
     res.json({ message: "User deleted" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+// ================== ADMIN - SUSPEND USER ==================
+router.patch("/admin/users/:id/suspend", async (req, res) => {
+  try {
+    const { reason } = req.body;
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    user.isSuspended = true;
+    user.suspendedAt = new Date();
+    user.suspendReason = reason || "Violated platform policies";
+    await user.save();
+
+    res.json({ message: "User suspended successfully" });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
