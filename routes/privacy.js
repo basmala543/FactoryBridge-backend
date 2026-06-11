@@ -5,9 +5,11 @@ const authMiddleware = require("../middleware/authMiddleware");
 const nodemailer = require("nodemailer");
 const crypto = require("crypto");
 const Report = require("../models/Report");
+const FactoryProfile = require("../models/factoryProfile");
 const Notification = require("../models/Notification");
 const cloudinary = require("cloudinary").v2;
 const multer = require("multer");
+
 const upload = multer({ storage: multer.memoryStorage() });
 
 const transporter = nodemailer.createTransport({
@@ -314,6 +316,19 @@ router.patch("/admin/reports/:id", authMiddleware, async (req, res) => {
   }
 });
 
+// GET /api/privacy/factory-owner-by-name/:name
+router.get('/factory-owner-by-name/:name', authMiddleware, async (req, res) => {  try {
+    const factory = await FactoryProfile.findOne({
+      factoryName: { $regex: new RegExp(`^${req.params.name}$`, 'i') }
+    }).select('user factoryName');
+    
+    if (!factory) return res.status(404).json({ message: 'Factory not found' });
+    
+    res.json({ userId: factory.user.toString(), factoryName: factory.factoryName });
+  } catch (e) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
 
 
 module.exports = router;
