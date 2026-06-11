@@ -125,7 +125,9 @@ router.get("/:chatId/messages", authMiddleware, async (req, res) => {
     const parts = chatId.split("_");
     if (parts.length < 2) return res.status(400).json({ message: "Invalid chatId format" });
     const [idA, idB] = parts;
-    if (userId !== idA && userId !== idB) return res.status(403).json({ message: "Access denied" });
+    const userIdStr = userId.toString();
+    if (userIdStr !== idA && userIdStr !== idB)
+      return res.status(403).json({ message: "Access denied" });
 
     const messages = await Message.find({
       $or: [
@@ -137,13 +139,13 @@ router.get("/:chatId/messages", authMiddleware, async (req, res) => {
     const result = messages.map((m) => ({
       id: m._id.toString(),
       senderId: m.senderId,
-      senderName: m.senderId === userId ? "Me" : "Other",
+      senderName: m.senderId === userIdStr ? "Me" : "Other",
       text: m.message,
       attachmentUrl: m.attachmentUrl || null,
       attachmentName: m.attachmentName || null,
       attachmentType: m.attachmentType || null,
       createdAt: m.timestamp,
-      isMe: m.senderId === userId,
+      isMe: m.senderId === userIdStr,
     }));
 
     return res.json({ data: result });
@@ -163,9 +165,11 @@ router.post("/:chatId/messages", authMiddleware, async (req, res) => {
     const parts = chatId.split("_");
     if (parts.length < 2) return res.status(400).json({ message: "Invalid chatId format" });
     const [idA, idB] = parts;
-    if (userId !== idA && userId !== idB) return res.status(403).json({ message: "Access denied" });
+    const userIdStr = userId.toString();
+    if (userIdStr !== idA && userIdStr !== idB)
+      return res.status(403).json({ message: "Access denied" });
 
-    const receiverId = userId === idA ? idB : idA;
+    const receiverId = userIdStr === idA ? idB : idA;
     const newMsg = new Message({ senderId: userId, receiverId, message: message.trim() });
     await newMsg.save();
 
@@ -192,7 +196,9 @@ router.delete('/:chatId', authMiddleware, async (req, res) => {
     const parts = chatId.split('_');
     if (parts.length < 2) return res.status(400).json({ message: 'Invalid chatId' });
     const [idA, idB] = parts;
-    if (userId !== idA && userId !== idB) return res.status(403).json({ message: 'Access denied' });
+    const userIdStr = userId.toString();
+    if (userIdStr !== idA && userIdStr !== idB)
+      return res.status(403).json({ message: 'Access denied' });
 
     await Message.deleteMany({
       $or: [
@@ -215,9 +221,11 @@ router.post('/:chatId/attachments', authMiddleware, upload.single('file'), async
     const parts = chatId.split('_');
     if (parts.length < 2) return res.status(400).json({ message: 'Invalid chatId' });
     const [idA, idB] = parts;
-    if (userId !== idA && userId !== idB) return res.status(403).json({ message: 'Access denied' });
+    const userIdStr = userId.toString();
+    if (userIdStr !== idA && userIdStr !== idB)
+      return res.status(403).json({ message: 'Access denied' });
 
-    const receiverId = userId === idA ? idB : idA;
+    const receiverId = userIdStr === idA ? idB : idA;
 
     const uploadResult = await new Promise((resolve, reject) => {
       cloudinary.uploader.upload_stream(
