@@ -8,25 +8,42 @@ const Order = require('../models/Orders');
 
 exports.createRequest = async (req, res) => {
   try {
-    const { factoryId, productName, quantity, notes } = req.body;
+    const { factoryId, productName, quantity, notes, productOption } = req.body;
+    const userId = req.user?.userId || req.user?._id;
+    const rawFactoryId = factoryId?.toString().trim();
 
-    const factoryProfile = await FactoryProfile.findById(factoryId);
+    if (!rawFactoryId) {
+      return res.status(400).json({ message: 'Factory ID is required' });
+    }
+
+    let factoryProfile = null;
+    if (mongoose.Types.ObjectId.isValid(rawFactoryId)) {
+      factoryProfile = await FactoryProfile.findById(rawFactoryId);
+    }
     if (!factoryProfile) {
-      return res.status(404).json({ message: "Factory not found" });
+      factoryProfile = await FactoryProfile.findOne({ userId: rawFactoryId });
+    }
+    if (!factoryProfile) {
+      return res.status(404).json({ message: 'Factory not found' });
     }
     const factoryUserId = factoryProfile.userId;
 
-    const brandProfile = await BrandProfile.findOne({ userId: req.user.userId });
+    const brandProfile = await BrandProfile.findOne({ userId: userId });
     const brandName = brandProfile?.brandName || brandProfile?.name || 'A Brand';
-    const brandUser = await require('../models/users').findById(req.user.userId);
+    const brandUser = await require('../models/users').findById(userId);
 
-    const request = await SampleRequest.create({
-      brand: req.user.userId,
+    const requestData = {
+      brand: userId,
       factory: factoryUserId,
       productName,
       quantity,
       notes,
-    });
+    };
+    if (productOption != null) {
+      requestData.productOption = productOption;
+    }
+
+    const request = await SampleRequest.create(requestData);
 
     await Notification.create({
       user: factoryUserId,
@@ -50,7 +67,11 @@ exports.createRequest = async (req, res) => {
 
     res.status(201).json({ data: request });
   } catch (error) {
-    res.status(500).json({ message: "Error creating request", error });
+    console.error('SampleRequest.createRequest error:', error);
+    res.status(500).json({
+      message: "Error creating request",
+      error: error?.message || error?.toString() || 'Unknown error',
+    });
   }
 };
 
