@@ -15,6 +15,7 @@ const orderSchema = new mongoose.Schema({
   type: { type: String },
   orderId: { type: String },
   productOption: { type: Object },
+  isRemainingPaid: { type: Boolean, default: false },
   status: {
     type: String,
     enum: [

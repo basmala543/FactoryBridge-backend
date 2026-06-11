@@ -139,8 +139,12 @@ router.put('/:id/status', auth, async (req, res) => {
     if (!factoryProfile || order.factory !== factoryProfile._id.toString()) {
       return res.status(403).json({ message: "Not authorized" });
     }
+    if (status === 'in_progress' && !order.isPaidByBrand) {
+  return res.status(400).json({ message: 'Cannot start production before deposit is paid' });
+}
 
-    order.status = status;
+order.status = status;  
+
     await order.save();
 
     if (status === 'accepted') {
@@ -186,6 +190,89 @@ router.get('/factory/:factoryId/products', auth, async (req, res) => {
     const factory = await FactoryProfile.findById(req.params.factoryId);
     if (!factory) return res.status(404).json({ message: "Factory not found" });
     res.json({ data: factory.factoryProducts || [] });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+// البراند يأكد استلام المنتج
+router.put('/:id/confirm-delivery', auth, async (req, res) => {
+  try {
+    const order = await Order.findOne({ _id: req.params.id, brand: req.user.userId });
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+
+    if (order.status !== 'in_progress') {
+      return res.status(400).json({ message: 'Order is not in progress' });
+    }
+
+    order.status = 'done';
+    await order.save();
+
+    const factoryProfile = await FactoryProfile.findById(order.factory);
+    if (factoryProfile) {
+      await Notification.create({
+        user: factoryProfile.userId,
+        title: 'Order Completed!',
+        message: `Brand confirmed delivery for "${order.productName}".`,
+        type: 'order',
+        data: { orderId: order._id.toString() },
+      });
+    }
+
+    res.json({ message: 'Order confirmed', data: order });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+router.put('/:id/pay-deposit', auth, async (req, res) => {
+  try {
+    const order = await Order.findOne({ _id: req.params.id, brand: req.user.userId });
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+
+    order.isPaidByBrand = true;
+    order.paymentMethod = req.body.method ?? 'card';
+    await order.save();
+
+    const factoryProfile = await FactoryProfile.findById(order.factory);
+    if (factoryProfile) {
+      await Notification.create({
+        user: factoryProfile.userId,
+        title: 'Deposit Received!',
+        message: `Brand paid the deposit for "${order.productName}". You can start production.`,
+        type: 'order',
+        data: { orderId: order._id.toString() },
+      });
+    }
+
+    res.json({ message: 'Deposit paid', data: order });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+router.put('/:id/pay-remaining', auth, async (req, res) => {
+  try {
+    const order = await Order.findOne({ _id: req.params.id, brand: req.user.userId });
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+
+    if (!order.isPaidByBrand) {
+      return res.status(400).json({ message: 'Deposit not paid yet' });
+    }
+
+    order.isRemainingPaid = true;
+    order.paymentMethod = req.body.method ?? 'card';
+    await order.save();
+
+    const factoryProfile = await FactoryProfile.findById(order.factory);
+    if (factoryProfile) {
+      await Notification.create({
+        user: factoryProfile.userId,
+        title: 'Remaining Payment Received!',
+        message: `Brand paid the remaining amount for "${order.productName}".`,
+        type: 'order',
+        data: { orderId: order._id.toString() },
+      });
+    }
+
+    res.json({ message: 'Remaining paid', data: order });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
