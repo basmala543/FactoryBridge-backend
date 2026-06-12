@@ -13,5 +13,4 @@ router.put('/:id/reject', rejectContract);
 
 router.post('/:id/notify-brand', notifyBrand);
 
-router.get('/order/:orderId', getContractByOrder);
 module.exports = router;

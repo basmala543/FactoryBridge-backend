@@ -98,7 +98,7 @@ const approveContract = async (req, res) => {
         message: 'Both parties approved the contract. You can now proceed to payment.',
         type: 'contract',
         data: {
-         orderId: contract.order?._id?.toString() ?? contract.order?.toString() ?? '',
+orderId: contract.order?._id?.toString() ?? contract.order?.toString() ?? '',
           contractId: contract._id.toString(),
         },
       });
@@ -119,8 +119,7 @@ const approveContract = async (req, res) => {
           message: 'The brand approved the contract. Please review and sign.',
           type: 'contract',
           data: {
-           orderId: contract.order?._id?.toString() ?? contract.order?.toString() ?? '',
-            contractId: contract._id.toString(),
+orderId: contract.order?._id?.toString() ?? contract.order?.toString() ?? '',            contractId: contract._id.toString(),
           },
         });
       }
