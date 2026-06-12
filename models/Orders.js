@@ -18,11 +18,12 @@ const orderSchema = new mongoose.Schema({
   isRemainingPaid: { type: Boolean, default: false },
   status: {
     type: String,
-    enum: [
-      'pending', 'accepted', 'rejected', 'pending_payment',
-      'in_progress', 'waiting_delivery', 'out_for_delivery',
-      'delivered', 'done',
-    ],
+ enum: [
+    'pending', 'accepted', 'rejected', 'pending_payment',
+    'in_progress', 'waiting_delivery', 'out_for_delivery',
+    'order_at_your_location',  // ← ضيفي ده
+    'delivered', 'done',
+  ],
     default: 'pending',
   },
 

@@ -44,17 +44,18 @@ async function enrichOrders(orders) {
 
 function buildStatusOptions(status) {
     // Only factories can transition, and only to the next valid states
-    const transitions = {
-        'pending': ['accepted', 'rejected'],
-        'pending_payment': ['in_progress', 'waiting_delivery'],
-        'accepted': ['in_progress', 'waiting_delivery'],
-        'in_progress': ['waiting_delivery', 'out_for_delivery'],
-        'waiting_delivery': ['out_for_delivery'],
-        'out_for_delivery': ['done'],
-        'delivered': ['done'],
-        'done': [],
-        'rejected': [],
-    };
+const transitions = {
+    'pending': ['accepted', 'rejected'],
+    'pending_payment': ['in_progress', 'waiting_delivery'],
+    'accepted': ['in_progress', 'waiting_delivery'],
+    'in_progress': ['waiting_delivery', 'out_for_delivery'],
+    'waiting_delivery': ['out_for_delivery'],
+    'out_for_delivery': ['order_at_your_location'],
+    'order_at_your_location': ['done'],   // ← جوه الـ {} مش برا
+    'delivered': ['done'],
+    'done': [],
+    'rejected': [],
+};
     return transitions[status] || [];
 }
 
@@ -72,6 +73,8 @@ function getNotificationMessage(status, order) {
             return `Your order "${order.productName}" is ready and waiting for delivery.`;
         case 'out_for_delivery':
             return `Your order "${order.productName}" is out for delivery!`;
+            case 'order_at_your_location': 
+            return `Your order "${order.productName}" has arrived at your location!`;
         case 'delivered':
             return `Your order "${order.productName}" has been delivered.`;
         case 'done':
@@ -88,7 +91,10 @@ router.get('/accepted-orders', auth, async (req, res) => {
             return res.status(404).json({ message: 'Factory profile not found' });
         }
 
-        const activeStatuses = ['accepted', 'pending_payment', 'in_progress', 'waiting_delivery'];
+const activeStatuses = [
+  'accepted', 'pending_payment', 'in_progress', 
+  'waiting_delivery', 'out_for_delivery', 'order_at_your_location'  // ← ضيفي
+];
         const orders = await Order.find({
             factory: factoryProfile._id.toString(),
             status: { $in: activeStatuses },
@@ -222,8 +228,13 @@ router.put('/orders/:id/status', auth, async (req, res) => {
         const brandUser = await User.findById(order.brand);
         const brandProfile = await BrandProfile.findOne({ userId: order.brand });
 
-        const title = status === 'accepted' ? 'Order Accepted!' : status === 'rejected' ? 'Order Declined' : status === 'in_progress' ? 'Production Started' : status === 'out_for_delivery' ? 'Out for Delivery' : status === 'delivered' ? 'Order Delivered' : 'Order Update';
-
+const title = status === 'accepted' ? 'Order Accepted!' 
+  : status === 'rejected' ? 'Order Declined' 
+  : status === 'in_progress' ? 'Production Started' 
+  : status === 'out_for_delivery' ? 'Out for Delivery'
+  : status === 'order_at_your_location' ? 'Order At Your Location' // ← ضيفي
+  : status === 'delivered' ? 'Order Delivered' 
+  : 'Order Update';
         await Notification.create({
             user: order.brand,
             title,
