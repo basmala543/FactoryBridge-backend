@@ -7,7 +7,7 @@ const auth = require('../middleware/authMiddleware');
 router.get('/unread-count', auth, ctrl.getUnreadCount);
 router.put('/mark-all-read', auth, ctrl.markAllAsRead);
 router.get('/', auth, ctrl.getNotifications);
-router.post('/', auth, ctrl.createNotification);
+router.post('/', ctrl.createNotification);
 
 // ✅ Dynamic تانياً
 router.put('/:id/read', auth, ctrl.markAsRead);
