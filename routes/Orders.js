@@ -200,8 +200,8 @@ router.put('/:id/confirm-delivery', auth, async (req, res) => {
     const order = await Order.findOne({ _id: req.params.id, brand: req.user.userId });
     if (!order) return res.status(404).json({ message: 'Order not found' });
 
-    if (order.status !== 'in_progress') {
-      return res.status(400).json({ message: 'Order is not in progress' });
+if (order.status !== 'order_at_your_location') {
+        return res.status(400).json({ message: 'Order is not in progress' });
     }
 
     order.status = 'done';
