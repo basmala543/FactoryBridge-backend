@@ -7,7 +7,7 @@ user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, // 
 type: { 
 
   type: String, 
-  enum: ['order', 'message', 'review', 'contract', 'report'],
+  enum: ['order', 'message', 'review', 'contract', 'report', 'warning', 'system', 'refund'],
   default: 'report'
 },
   isRead: { type: Boolean, default: false },
