@@ -113,6 +113,34 @@ router.get('/my-orders', auth, async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
+router.get('/factory-orders', auth, async (req, res) => {
+  try {
+    const factoryProfile = await FactoryProfile.findOne({ userId: req.user.userId });
+    console.log('factoryProfile._id:', factoryProfile?._id);
+    
+    const { brandId } = req.query;
+    console.log('brandId from query:', brandId);
+    
+    const BrandProfile = require('../models/brandProfile');
+    const brandProfile = await BrandProfile.findById(brandId);
+    console.log('brandProfile:', brandProfile);
+    console.log('brandProfile.userId:', brandProfile?.userId);
+    
+const filter = { factory: factoryProfile._id.toString() };
+    if (brandProfile) filter.brand = brandProfile.userId;
+    
+    console.log('filter:', filter);
+    
+    const orders = await Order.find(filter).sort({ createdAt: -1 });
+    console.log('orders count:', orders.length);
+    
+    res.json({ data: orders });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+
 
 // تفاصيل order
 router.get('/:id', auth, async (req, res) => {
@@ -323,30 +351,5 @@ router.put('/:id/refund', auth, async (req, res) => {
   }
 });
 // المصنع يشوف orders بتاعته (مع فلتر brandId اختياري)
-router.get('/factory-orders', auth, async (req, res) => {
-  try {
-    const factoryProfile = await FactoryProfile.findOne({ userId: req.user.userId });
-    console.log('factoryProfile._id:', factoryProfile?._id);
-    
-    const { brandId } = req.query;
-    console.log('brandId from query:', brandId);
-    
-    const BrandProfile = require('../models/brandProfile');
-    const brandProfile = await BrandProfile.findById(brandId);
-    console.log('brandProfile:', brandProfile);
-    console.log('brandProfile.userId:', brandProfile?.userId);
-    
-const filter = { factory: factoryProfile._id.toString() };
-    if (brandProfile) filter.brand = brandProfile.userId;
-    
-    console.log('filter:', filter);
-    
-    const orders = await Order.find(filter).sort({ createdAt: -1 });
-    console.log('orders count:', orders.length);
-    
-    res.json({ data: orders });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
+
 module.exports = router;
