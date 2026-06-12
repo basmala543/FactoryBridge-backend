@@ -336,7 +336,7 @@ router.get('/factory-orders', auth, async (req, res) => {
     console.log('brandProfile:', brandProfile);
     console.log('brandProfile.userId:', brandProfile?.userId);
     
-    const filter = { factory: factoryProfile._id };
+const filter = { factory: factoryProfile._id.toString() };
     if (brandProfile) filter.brand = brandProfile.userId;
     
     console.log('filter:', filter);
