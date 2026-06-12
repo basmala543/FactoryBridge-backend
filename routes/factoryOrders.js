@@ -44,18 +44,18 @@ async function enrichOrders(orders) {
 
 function buildStatusOptions(status) {
     // Only factories can transition, and only to the next valid states
-const transitions = {
-    'pending': ['accepted', 'rejected'],
-    'pending_payment': ['in_progress', 'waiting_delivery'],
-    'accepted': ['in_progress', 'waiting_delivery'],
-    'in_progress': ['waiting_delivery', 'out_for_delivery'],
-    'waiting_delivery': ['out_for_delivery'],
-    'out_for_delivery': ['order_at_your_location'],
-    'order_at_your_location': ['done'],   // ← جوه الـ {} مش برا
-    'delivered': ['done'],
-    'done': [],
-    'rejected': [],
-};
+    const transitions = {
+        'pending': ['accepted', 'rejected'],
+        'pending_payment': ['in_progress', 'waiting_delivery'],
+        'accepted': ['in_progress', 'waiting_delivery', 'out_for_delivery', 'order_at_your_location'],
+        'in_progress': ['waiting_delivery', 'out_for_delivery', 'order_at_your_location'],
+        'waiting_delivery': ['out_for_delivery', 'order_at_your_location'],
+        'out_for_delivery': ['order_at_your_location'],
+        'order_at_your_location': ['done'],
+        'delivered': ['done'],
+        'done': [],
+        'rejected': [],
+    };
     return transitions[status] || [];
 }
 
