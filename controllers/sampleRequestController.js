@@ -105,6 +105,8 @@ exports.updateStatus = async (req, res) => {
           isPaidByBrand: false,
         });
         console.log('Order created from accepted sample request:', request._id, 'factory:', factoryProfileId);
+        const { createContract } = require('./contractController');
+await createContract(newOrder._id);
       } catch (orderError) {
         console.error('Failed to create order from sample request:', orderError);
       }
