@@ -326,21 +326,24 @@ router.put('/:id/refund', auth, async (req, res) => {
 router.get('/factory-orders', auth, async (req, res) => {
   try {
     const factoryProfile = await FactoryProfile.findOne({ userId: req.user.userId });
-    if (!factoryProfile) return res.status(404).json({ message: 'Factory not found' });
-
-    const { brandId } = req.query;
-    const filter = { factory: factoryProfile._id };
+    console.log('factoryProfile._id:', factoryProfile?._id);
     
-    if (brandId) {
-      // brandId ده الـ brandProfile._id، محتاجين نجيب الـ userId منه
-      const BrandProfile = require('../models/brandProfile');
-      const brandProfile = await BrandProfile.findById(brandId);
-      if (brandProfile) {
-        filter.brand = brandProfile.userId; // ← الـ userId مش الـ _id
-      }
-    }
-
+    const { brandId } = req.query;
+    console.log('brandId from query:', brandId);
+    
+    const BrandProfile = require('../models/brandProfile');
+    const brandProfile = await BrandProfile.findById(brandId);
+    console.log('brandProfile:', brandProfile);
+    console.log('brandProfile.userId:', brandProfile?.userId);
+    
+    const filter = { factory: factoryProfile._id };
+    if (brandProfile) filter.brand = brandProfile.userId;
+    
+    console.log('filter:', filter);
+    
     const orders = await Order.find(filter).sort({ createdAt: -1 });
+    console.log('orders count:', orders.length);
+    
     res.json({ data: orders });
   } catch (err) {
     res.status(500).json({ message: err.message });
