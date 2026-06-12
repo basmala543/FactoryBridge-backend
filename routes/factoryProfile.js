@@ -395,7 +395,7 @@ router.get("/all-offers", async (req, res) => {
   try {
     const factories = await FactoryProfile.find(
       { "offers.0": { $exists: true } }
-    ).select("factoryName logo location offers");
+    ).select("factoryName logo location media offers");
     res.json({ data: factories });
   } catch (err) {
     res.status(500).json({ message: err.message });
