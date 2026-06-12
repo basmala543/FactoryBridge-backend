@@ -340,7 +340,7 @@ router.get("/:id/products", async (req, res) => {
 
 router.post("/offers", authMiddleware, async (req, res) => {
   try {
-    const { title, discountPercent, minimumOrder, description, expiryDate } = req.body;
+    const { title, discountPercent, promoCode, minimumOrder, description, expiryDate } = req.body;
     const expiry = expiryDate ? new Date(expiryDate) : null;
     const isActive = expiry ? expiry > new Date() : true;
     const profile = await FactoryProfile.findOneAndUpdate(
@@ -350,6 +350,7 @@ router.post("/offers", authMiddleware, async (req, res) => {
           offers: {
             title,
             discountPercent: Number(discountPercent), // ← التعديل هنا
+            promoCode,   
             minimumOrder,
             description,
             expiryDate: expiry,

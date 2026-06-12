@@ -29,10 +29,12 @@ const factoryProfileSchema = new mongoose.Schema(
       {
         title: { type: String, default: '' },
         discountPercent: { type: Number, default: 0 },
+        promoCode: { type: String, default: '' },
         minimumOrder: { type: String, default: '' },
         description: { type: String, default: '' },
         expiryDate: { type: Date, default: null },
         isActive: { type: Boolean, default: true },
+        
       }
     ],
   },
