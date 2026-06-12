@@ -245,7 +245,7 @@ router.get("/blocked-users", authMiddleware, async (req, res) => {
 // بيبعت report عن مشكلة أو مستخدم مشبوه
 router.post("/report", authMiddleware, async (req, res) => {
   try {
-    const { reason, description, factoryId, orderId, factoryName, screenshotUrl } = req.body;
+const { reason, description, factoryId, orderId, factoryName, screenshotUrl, brandId, brandName } = req.body;
 
     if (!reason) return res.status(400).json({ message: "Reason is required" });
 
@@ -259,6 +259,8 @@ router.post("/report", authMiddleware, async (req, res) => {
       factoryId:     factoryId || null,
       factoryName:   factoryName || "",
       orderId:       orderId || null,
+      brandId:   brandId || null,
+      brandName: brandName || "",
       reason,
       description:   description || "",
       screenshotUrl: screenshotUrl || "",
