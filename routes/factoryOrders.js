@@ -34,8 +34,10 @@ async function enrichOrders(orders) {
         const brandId = order.brand?.toString?.() ?? order.brand;
         const brandProfile = brandMap.get(brandId);
         const brandUser = userMap.get(brandId);
-        if (brandProfile) {
-            obj.brandName = brandUser?.name || brandProfile.brandName || brandProfile.name || obj.brandName;
+        if (brandProfile || brandUser) {
+            // Prefer the brand profile display name (brandName or name).
+            // Fall back to the user's name only if no brand name exists.
+            obj.brandName = (brandProfile && (brandProfile.brandName || brandProfile.name)) || (brandUser && brandUser.name) || obj.brandName;
             obj.brandId = brandId;
         }
         return obj;
@@ -73,7 +75,7 @@ function getNotificationMessage(status, order) {
             return `Your order "${order.productName}" is ready and waiting for delivery.`;
         case 'out_for_delivery':
             return `Your order "${order.productName}" is out for delivery!`;
-            case 'order_at_your_location': 
+        case 'order_at_your_location':
             return `Your order "${order.productName}" has arrived at your location!`;
         case 'delivered':
             return `Your order "${order.productName}" has been delivered.`;
@@ -91,10 +93,10 @@ router.get('/accepted-orders', auth, async (req, res) => {
             return res.status(404).json({ message: 'Factory profile not found' });
         }
 
-const activeStatuses = [
-  'accepted', 'pending_payment', 'in_progress', 
-  'waiting_delivery', 'out_for_delivery', 'order_at_your_location'  // ← ضيفي
-];
+        const activeStatuses = [
+            'accepted', 'pending_payment', 'in_progress',
+            'waiting_delivery', 'out_for_delivery', 'order_at_your_location'  // ← ضيفي
+        ];
         const orders = await Order.find({
             factory: factoryProfile._id.toString(),
             status: { $in: activeStatuses },
@@ -228,13 +230,13 @@ router.put('/orders/:id/status', auth, async (req, res) => {
         const brandUser = await User.findById(order.brand);
         const brandProfile = await BrandProfile.findOne({ userId: order.brand });
 
-const title = status === 'accepted' ? 'Order Accepted!' 
-  : status === 'rejected' ? 'Order Declined' 
-  : status === 'in_progress' ? 'Production Started' 
-  : status === 'out_for_delivery' ? 'Out for Delivery'
-  : status === 'order_at_your_location' ? 'Order At Your Location' // ← ضيفي
-  : status === 'delivered' ? 'Order Delivered' 
-  : 'Order Update';
+        const title = status === 'accepted' ? 'Order Accepted!'
+            : status === 'rejected' ? 'Order Declined'
+                : status === 'in_progress' ? 'Production Started'
+                    : status === 'out_for_delivery' ? 'Out for Delivery'
+                        : status === 'order_at_your_location' ? 'Order At Your Location' // ← ضيفي
+                            : status === 'delivered' ? 'Order Delivered'
+                                : 'Order Update';
         await Notification.create({
             user: order.brand,
             title,
@@ -249,7 +251,7 @@ const title = status === 'accepted' ? 'Order Accepted!'
                 factoryId: factoryProfile._id.toString(),
                 factoryName: factoryProfile.factoryName || '',
                 factoryLogo: factoryProfile.logo || '',
-                brandName: brandUser?.name || brandProfile?.brandName || '',
+                brandName: brandProfile?.brandName || brandProfile?.name || brandUser?.name || '',
                 brandLogo: brandProfile?.logo || '',
             },
         });
