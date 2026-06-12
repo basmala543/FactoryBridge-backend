@@ -341,6 +341,8 @@ router.get("/:id/products", async (req, res) => {
 router.post("/offers", authMiddleware, async (req, res) => {
   try {
     const { title, discountPercent, minimumOrder, description, expiryDate } = req.body;
+    const expiry = expiryDate ? new Date(expiryDate) : null;
+    const isActive = expiry ? expiry > new Date() : true;
     const profile = await FactoryProfile.findOneAndUpdate(
       { userId: req.user.userId },
       {
@@ -350,7 +352,8 @@ router.post("/offers", authMiddleware, async (req, res) => {
             discountPercent: Number(discountPercent), // ← التعديل هنا
             minimumOrder,
             description,
-            expiryDate
+            expiryDate: expiry,
+            isActive,
           }
         }
       },
@@ -368,7 +371,22 @@ router.get("/offers", authMiddleware, async (req, res) => {
   try {
     const profile = await FactoryProfile.findOne({ userId: req.user.userId });
     if (!profile) return res.status(404).json({ message: "Factory profile not found" });
-    res.json({ data: profile.offers || [] });
+
+    const now = new Date();
+    let hasExpiredUpdate = false;
+    const offers = (profile.offers || []).map((offer) => {
+      if (offer.isActive && offer.expiryDate && offer.expiryDate <= now) {
+        offer.isActive = false;
+        hasExpiredUpdate = true;
+      }
+      return offer;
+    });
+
+    if (hasExpiredUpdate) {
+      await profile.save();
+    }
+
+    res.json({ data: offers });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -389,6 +407,27 @@ router.delete("/offers/:offerId", authMiddleware, async (req, res) => {
   }
 });
 
+// ================== UPDATE OFFER EXPIRY ==================
+router.patch("/offers/:offerId", authMiddleware, async (req, res) => {
+  try {
+    const { expiryDate } = req.body;
+    const profile = await FactoryProfile.findOne({ userId: req.user.userId });
+    if (!profile) return res.status(404).json({ message: "Factory profile not found" });
+
+    const offer = profile.offers.id(req.params.offerId);
+    if (!offer) return res.status(404).json({ message: "Offer not found" });
+
+    const expiry = expiryDate ? new Date(expiryDate) : null;
+    offer.expiryDate = expiry;
+    offer.isActive = expiry ? expiry > new Date() : true;
+
+    await profile.save();
+    res.json({ message: "Offer updated", data: profile.offers });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 
 // ================== GET ALL ACTIVE OFFERS ==================
 router.get("/all-offers", async (req, res) => {
@@ -396,7 +435,32 @@ router.get("/all-offers", async (req, res) => {
     const factories = await FactoryProfile.find(
       { "offers.0": { $exists: true } }
     ).select("factoryName logo location media offers");
-    res.json({ data: factories });
+
+    const now = new Date();
+    const filteredFactories = [];
+
+    for (const factory of factories) {
+      let hasExpiredUpdate = false;
+      const activeOffers = (factory.offers || []).filter((offer) => {
+        if (offer.isActive && offer.expiryDate && offer.expiryDate <= now) {
+          offer.isActive = false;
+          hasExpiredUpdate = true;
+        }
+        return offer.isActive && (!offer.expiryDate || offer.expiryDate > now);
+      });
+
+      if (hasExpiredUpdate) {
+        await factory.save();
+      }
+
+      if (activeOffers.length > 0) {
+        const plainFactory = factory.toObject();
+        plainFactory.offers = activeOffers;
+        filteredFactories.push(plainFactory);
+      }
+    }
+
+    res.json({ data: filteredFactories });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
