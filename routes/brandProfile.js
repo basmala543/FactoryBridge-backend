@@ -127,5 +127,17 @@ router.delete("/admin/:id", async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
+// ================== SEARCH BRANDS ==================
+router.get("/search-brands", async (req, res) => {
+  try {
+    const q = req.query.q?.toString() ?? '';
+    const brands = await BrandProfile.find(
+q.trim() === '' ? {} : { brandName: { $regex: q, $options: 'i' } }
+    );
+    res.json(brands);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 
 module.exports = router;
