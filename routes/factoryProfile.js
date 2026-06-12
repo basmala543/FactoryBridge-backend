@@ -374,19 +374,19 @@ router.get("/offers", authMiddleware, async (req, res) => {
 
     const now = new Date();
     let hasExpiredUpdate = false;
-    const activeOffers = (profile.offers || []).filter((offer) => {
+    const offers = (profile.offers || []).map((offer) => {
       if (offer.isActive && offer.expiryDate && offer.expiryDate <= now) {
         offer.isActive = false;
         hasExpiredUpdate = true;
       }
-      return offer.isActive && (!offer.expiryDate || offer.expiryDate > now);
+      return offer;
     });
 
     if (hasExpiredUpdate) {
       await profile.save();
     }
 
-    res.json({ data: activeOffers });
+    res.json({ data: offers });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
