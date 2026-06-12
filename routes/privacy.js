@@ -298,7 +298,8 @@ router.post("/upload-screenshot", authMiddleware, upload.single("file"), async (
 router.get("/admin/reports", authMiddleware, async (req, res) => {
   try {
     const reports = await Report.find()
-      .sort({ createdAt: -1 });
+  .select('+reporterId')
+  .sort({ createdAt: -1 });
     res.json({ reports });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -331,6 +332,22 @@ router.get('/factory-owner-by-name/:name', authMiddleware, async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
+
+router.get('/brand-owner-by-name/:name', authMiddleware, async (req, res) => {
+  try {
+    const BrandProfile = require('../models/brandProfile');
+    const brand = await BrandProfile.findOne({
+      brandName: { $regex: new RegExp(req.params.name, 'i') }
+    }).select('userId brandName');
+
+    if (!brand) return res.status(404).json({ message: 'Brand not found' });
+
+    res.json({ userId: brand.userId.toString(), brandName: brand.brandName });
+  } catch (e) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 
 
 module.exports = router;
