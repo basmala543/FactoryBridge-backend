@@ -322,4 +322,20 @@ router.put('/:id/refund', auth, async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
+// المصنع يشوف orders بتاعته (مع فلتر brandId اختياري)
+router.get('/factory-orders', auth, async (req, res) => {
+  try {
+    const factoryProfile = await FactoryProfile.findOne({ userId: req.user.userId });
+    if (!factoryProfile) return res.status(404).json({ message: 'Factory not found' });
+
+    const { brandId } = req.query;
+    const filter = { factory: factoryProfile._id };
+    if (brandId) filter.brand = brandId;
+
+    const orders = await Order.find(filter).sort({ createdAt: -1 });
+    res.json({ data: orders });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 module.exports = router;
