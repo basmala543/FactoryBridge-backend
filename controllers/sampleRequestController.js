@@ -89,14 +89,13 @@ exports.updateStatus = async (req, res) => {
       return res.status(404).json({ message: "Request not found" });
     }
 
-    // If sample request is accepted, create an Order so it appears in factory's active orders
+    let newOrder = null;
     if (status === 'accepted') {
       try {
-        // Get the FactoryProfile ID (not just the User ID) for proper order association
         const factoryProfile = await FactoryProfile.findOne({ userId: request.factory });
         const factoryProfileId = factoryProfile?._id || request.factory;
 
-        await Order.create({
+        newOrder = await Order.create({
           brand: request.brand,
           factory: factoryProfileId,
           productName: request.productName,
@@ -108,7 +107,6 @@ exports.updateStatus = async (req, res) => {
         console.log('Order created from accepted sample request:', request._id, 'factory:', factoryProfileId);
       } catch (orderError) {
         console.error('Failed to create order from sample request:', orderError);
-        // Don't fail the entire request update if order creation fails
       }
     }
 
@@ -126,7 +124,7 @@ exports.updateStatus = async (req, res) => {
       user: request.brand,
       title,
       message,
-      type: 'system',
+      type: status === 'accepted' ? 'contract' : 'system',
       data: {
         factoryName,
         factoryLogo,
@@ -134,6 +132,7 @@ exports.updateStatus = async (req, res) => {
         requestId: request._id.toString(),
         productName: request.productName,
         status,
+        orderId: newOrder?._id?.toString() ?? '',
       },
     });
 
