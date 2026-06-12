@@ -330,7 +330,15 @@ router.get('/factory-orders', auth, async (req, res) => {
 
     const { brandId } = req.query;
     const filter = { factory: factoryProfile._id };
-    if (brandId) filter.brand = brandId;
+    
+    if (brandId) {
+      // brandId ده الـ brandProfile._id، محتاجين نجيب الـ userId منه
+      const BrandProfile = require('../models/brandProfile');
+      const brandProfile = await BrandProfile.findById(brandId);
+      if (brandProfile) {
+        filter.brand = brandProfile.userId; // ← الـ userId مش الـ _id
+      }
+    }
 
     const orders = await Order.find(filter).sort({ createdAt: -1 });
     res.json({ data: orders });
