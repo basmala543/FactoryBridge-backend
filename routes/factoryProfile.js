@@ -407,6 +407,27 @@ router.delete("/offers/:offerId", authMiddleware, async (req, res) => {
   }
 });
 
+// ================== UPDATE OFFER EXPIRY ==================
+router.patch("/offers/:offerId", authMiddleware, async (req, res) => {
+  try {
+    const { expiryDate } = req.body;
+    const profile = await FactoryProfile.findOne({ userId: req.user.userId });
+    if (!profile) return res.status(404).json({ message: "Factory profile not found" });
+
+    const offer = profile.offers.id(req.params.offerId);
+    if (!offer) return res.status(404).json({ message: "Offer not found" });
+
+    const expiry = expiryDate ? new Date(expiryDate) : null;
+    offer.expiryDate = expiry;
+    offer.isActive = expiry ? expiry > new Date() : true;
+
+    await profile.save();
+    res.json({ message: "Offer updated", data: profile.offers });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 
 // ================== GET ALL ACTIVE OFFERS ==================
 router.get("/all-offers", async (req, res) => {
