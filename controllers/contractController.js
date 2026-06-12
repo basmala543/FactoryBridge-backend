@@ -31,11 +31,19 @@ const getContractByOrder = async (req, res) => {
 
     // جيب Factory و Brand profiles
 const brandId = contract.brand?.toString();
-const brandUser = await User.findById(brandId);
-const brandProfile = await BrandProfile.findOne({ userId: brandId });
-const factoryProfile = await FactoryProfile.findById(contract.factory);
-const factoryUser = await User.findById(factoryProfile?.userId);
+const factoryId = contract.factory?.toString();
 
+const [brandUser, brandProfile, factoryProfile] = await Promise.all([
+  User.findById(brandId).catch(() => null),
+  BrandProfile.findOne({ userId: brandId }).catch(() => null),
+  FactoryProfile.findOne({ 
+    $or: [{ _id: factoryId }, { userId: factoryId }] 
+  }).catch(() => null),
+]);
+
+const factoryUser = factoryProfile?.userId 
+  ? await User.findById(factoryProfile.userId).catch(() => null)
+  : null;
     res.json({
       ...contract.toObject(),
       factoryInfo: {
@@ -52,6 +60,7 @@ const factoryUser = await User.findById(factoryProfile?.userId);
       },
     });
   } catch (err) {
+    console.error('getContractByOrder error:', err);
     res.status(500).json({ message: err.message });
   }
 };
