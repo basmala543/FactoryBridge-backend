@@ -42,11 +42,18 @@ router.post("/signup", async (req, res) => {
       return res.status(400).json({ message: "Invalid role" });
     }
 
-    const existingUser = await User.findOne({ email: Email });
+        const existingUser = await User.findOne({ email: Email });
 
     if (existingUser) {
+      // ← لو الـ role مختلف — رسالة واضحة
+      if (existingUser.role !== Role) {
+        return res.status(400).json({ 
+          message: `This email is already registered as a ${existingUser.role}. You cannot sign up as a ${Role}.` 
+        });
+      }
       return res.status(400).json({ message: "Email already exists" });
     }
+
 
     const hashedPassword = await bcrypt.hash(Password, 10);
 
