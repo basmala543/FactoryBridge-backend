@@ -263,4 +263,27 @@ router.put('/orders/:id/status', auth, async (req, res) => {
     }
 });
 
+// PUT /factory/orders/:id/set-price
+router.put('/orders/:id/set-price', auth, async (req, res) => {
+  try {
+    const { totalPrice, deposit } = req.body;
+    const factoryProfile = await findFactoryProfile(req.user.userId);
+    if (!factoryProfile) return res.status(404).json({ message: 'Factory profile not found' });
+
+    const order = await Order.findOne({
+      _id: req.params.id,
+      factory: factoryProfile._id.toString(),
+    });
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+
+    order.totalPrice = totalPrice;
+    order.deposit = deposit;
+    await order.save();
+
+    res.json({ data: order });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 module.exports = router;

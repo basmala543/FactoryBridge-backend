@@ -103,6 +103,8 @@ exports.updateStatus = async (req, res) => {
           notes: request.notes,
           status: 'accepted',
           isPaidByBrand: false,
+            totalPrice: request.productOption?.totalPrice ?? null,
+
         });
         console.log('Order created from accepted sample request:', request._id, 'factory:', factoryProfileId);
         const { createContract } = require('./contractController');
