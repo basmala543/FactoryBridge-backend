@@ -74,10 +74,9 @@ router.post("/signup", async (req, res) => {
 });
 // ================== LOGIN (نسخة محدّثة بتحفظ الـ session) ==================
 // استبدلي الـ login route الموجود في auth.js بالكود ده
-
 router.post("/login", async (req, res) => {
   try {
-    const { Email, Password } = req.body;
+    const { Email, Password, Role } = req.body; // ← أضف Role
 
     const user = await User.findOne({ email: Email });
     if (!user) return res.status(400).json({ message: "User not found" });
@@ -85,13 +84,19 @@ router.post("/login", async (req, res) => {
     const isMatch = await bcrypt.compare(Password, user.password);
     if (!isMatch) return res.status(400).json({ message: "Wrong password" });
 
+    // ← الحماية من الـ role المختلف
+    if (Role && user.role !== Role) {
+      return res.status(403).json({ 
+        message: `This account is registered as a ${user.role}. You cannot login as a ${Role}.` 
+      });
+    }
+
     // ================== SUSPENSION CHECK ==================
     if (user.isSuspended) {
       return res.status(403).json({ 
         message: "Your account has been suspended due to: " + (user.suspendReason || "policy violation") 
       });
     }
-    // ======================================================
 
     // ── حفظ الـ login session ──
     const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress || "";
