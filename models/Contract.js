@@ -1,9 +1,14 @@
 const mongoose = require('mongoose');
 
 const contractSchema = new mongoose.Schema({
-  order: { type: mongoose.Schema.Types.ObjectId, ref: 'Order', required: true },
+  order: { type: mongoose.Schema.Types.ObjectId, ref: 'Order' }, // ✅ شيلنا required
   brand: { type: String, required: true },
   factory: { type: String, required: true },
+  
+  totalPrice: { type: Number },
+  deposit: { type: Number },
+  productName: { type: String },
+  quantity: { type: Number },
 
   status: {
     type: String,

@@ -8,7 +8,7 @@ const Order = require('../models/Orders');
 
 exports.createRequest = async (req, res) => {
   try {
-    const { factoryId, productName, quantity, notes } = req.body;
+    const { factoryId, productName, quantity, notes, productOption } = req.body; // ✅ ضفنا productOption
 
     const factoryProfile = await FactoryProfile.findById(factoryId);
     if (!factoryProfile) {
@@ -26,6 +26,7 @@ exports.createRequest = async (req, res) => {
       productName,
       quantity,
       notes,
+      productOption, // ✅ ضفنا productOption
     });
 
     await Notification.create({
@@ -95,6 +96,10 @@ exports.updateStatus = async (req, res) => {
         const factoryProfile = await FactoryProfile.findOne({ userId: request.factory });
         const factoryProfileId = factoryProfile?._id || request.factory;
 
+        // ✅ حسبنا totalPrice و deposit من productOption
+        const totalPrice = request.productOption?.totalPrice ?? 0;
+        const deposit = totalPrice * 0.3;
+
         newOrder = await Order.create({
           brand: request.brand,
           factory: factoryProfileId,
@@ -103,12 +108,13 @@ exports.updateStatus = async (req, res) => {
           notes: request.notes,
           status: 'accepted',
           isPaidByBrand: false,
-            totalPrice: request.productOption?.totalPrice ?? null,
-
+          totalPrice,   // ✅
+          deposit,      // ✅
         });
+
         console.log('Order created from accepted sample request:', request._id, 'factory:', factoryProfileId);
         const { createContract } = require('./contractController');
-await createContract(newOrder._id);
+        await createContract(newOrder._id);
       } catch (orderError) {
         console.error('Failed to create order from sample request:', orderError);
       }
