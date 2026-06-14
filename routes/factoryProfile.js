@@ -77,11 +77,14 @@ router.get("/profile", authMiddleware, async (req, res) => {
 router.put(
   "/profile",
   authMiddleware,
-  uploadFactoryMedia.fields([
-    { name: "media", maxCount: 10 },
-    { name: "logo", maxCount: 1 },
-    { name: "productImages", maxCount: 20 },
-  ]),
+uploadFactoryMedia.fields([
+  { name: "media", maxCount: 10 },
+  { name: "logo", maxCount: 1 },
+  ...Array.from({ length: 20 }, (_, i) => ({ 
+    name: `productImage_${i}`, 
+    maxCount: 1 
+  })),
+]),
   handleUploadError,
   async (req, res) => {
     try {
@@ -113,13 +116,14 @@ router.put(
             ? JSON.parse(factoryProducts)
             : factoryProducts;
 
-        if (req.files && req.files["productImages"]) {
-          req.files["productImages"].forEach((file, index) => {
-            if (products[index] && file.size > 0) {
-              products[index].imageUrl = file.path;
-            }
-          });
-        }
+     // ← بعد (صح)
+products = products.map((product, index) => {
+  const fileKey = `productImage_${index}`;
+  if (req.files && req.files[fileKey] && req.files[fileKey][0]) {
+    product.imageUrl = req.files[fileKey][0].path;
+  }
+  return product;
+});
 
         updateData.factoryProducts = products;
       }

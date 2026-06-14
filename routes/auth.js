@@ -61,6 +61,7 @@ router.post("/signup", async (req, res) => {
       return res.status(400).json({ message: "Email already exists" });
     }
 
+
     const hashedPassword = await bcrypt.hash(Password, 10);
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
@@ -94,7 +95,7 @@ router.post("/signup", async (req, res) => {
 
 router.post("/login", async (req, res) => {
   try {
-    const { Email, Password } = req.body;
+    const { Email, Password, Role } = req.body; // ← أضف Role
 
     const user = await User.findOne({ email: Email });
     if (!user) return res.status(400).json({ message: "User not found" });
@@ -113,7 +114,6 @@ router.post("/login", async (req, res) => {
         message: "Your account has been suspended due to: " + (user.suspendReason || "policy violation") 
       });
     }
-    // ======================================================
 
     //   login session //
     const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress || "";
