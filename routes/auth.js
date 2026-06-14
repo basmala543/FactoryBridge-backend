@@ -50,7 +50,7 @@ router.post("/signup", async (req, res) => {
         await existingUser.save();
 
         await transporter.sendMail({
-          from: "factorybridge7@gmail.com",
+          from: "factorybridge3@gmail.com",
           to: Email,
           subject: "Verify your email - FactoryBridge",
           text: `Your verification code is: ${otp}`,
@@ -78,7 +78,7 @@ router.post("/signup", async (req, res) => {
     await newUser.save();
 
     await transporter.sendMail({
-      from: "factorybridge7@gmail.com",
+      from: "factorybridge3@gmail.com",
       to: Email,
       subject: "Verify your email - FactoryBridge",
       text: `Your verification code is: ${otp}`,
@@ -165,7 +165,7 @@ router.post("/forgot-password", async (req, res) => {
     await user.save();
 
     await transporter.sendMail({
-      from: "factorybridge7@gmail.com",
+      from: "factorybridge3@gmail.com",
       to: Email,
       subject: "Password Reset OTP",
       text: `Your OTP is ${otp}`
