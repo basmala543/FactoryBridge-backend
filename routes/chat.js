@@ -55,10 +55,12 @@ router.get("/", authMiddleware, async (req, res) => {
           unreadCount: {
             $sum: {
               $cond: [
-                { $and: [
-                  { $eq: ["$receiverId", userId] },
-                  { $eq: [{ $ifNull: ["$isRead", false] }, false] },
-                ]},
+                {
+                  $and: [
+                    { $eq: ["$receiverId", userId] },
+                    { $eq: [{ $ifNull: ["$isRead", false] }, false] },
+                  ]
+                },
                 1, 0,
               ],
             },
@@ -90,7 +92,7 @@ router.get("/", authMiddleware, async (req, res) => {
       participants = await User.find({
         _id: { $in: validParticipantIds.map(id => new mongoose.Types.ObjectId(id)) },
       }).select("_id name companyName profileImage");
-    } catch (_) {}
+    } catch (_) { }
 
     const participantMap = {};
     participants.forEach((p) => { participantMap[p._id.toString()] = p; });

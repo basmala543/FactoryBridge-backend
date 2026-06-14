@@ -1,20 +1,19 @@
 const Review = require('../models/review');
-const Notification = require('../models/Notification'); // ← ضيفي الـ import ده فوق
+const Notification = require('../models/Notification');
 
-// إضافة مراجعة جديدة
 exports.addReview = async (req, res) => {
   try {
     const { factoryId, rating, comment, userName } = req.body;
     const newReview = new Review({
       factory: factoryId,
-user: req.user.userId,
+      user: req.user.userId,
       userName,
       rating,
       comment
     });
     await newReview.save();
-  await Notification.create({
-      user: factoryId, // الـ factory هي اللي هتستقبل الإشعار
+    await Notification.create({
+      user: factoryId, // factory owner will receive the notification
       title: 'New Review',
       message: `${userName} left you a ${rating}-star review`,
       type: 'review',
@@ -29,24 +28,24 @@ user: req.user.userId,
     res.status(201).json({ data: newReview });
   } catch (error) {
     res.status(500).json({ message: "Error adding review", error });
-  } 
+  }
 
 };
 
-// جلب مراجعات مصنع معين
+// fetch all reviews for a specific factory
 exports.getFactoryReviews = async (req, res) => {
   try {
-    const reviews = await Review.find({ 
-      factory: req.params.factoryId 
+    const reviews = await Review.find({
+      factory: req.params.factoryId
     }).sort({ createdAt: -1 });
-    
+
     res.json({ data: reviews });
   } catch (error) {
     res.status(500).json({ message: "Error fetching reviews", error });
   }
 };
 
-// تعديل مراجعة
+// edit a review
 exports.updateReview = async (req, res) => {
   try {
     const { rating, comment } = req.body;
@@ -56,7 +55,7 @@ exports.updateReview = async (req, res) => {
       return res.status(404).json({ message: "Review not found" });
     }
 
-    // تأكدي إن الـ user هو صاحب الـ review
+    // make sure the user is the owner of the review
     if (review.user !== req.user.userId) {
       return res.status(403).json({ message: "Not authorized" });
     }
@@ -71,7 +70,7 @@ exports.updateReview = async (req, res) => {
   }
 };
 
-// حذف مراجعة
+// delete a review
 exports.deleteReview = async (req, res) => {
   try {
     const review = await Review.findById(req.params.id);
@@ -80,7 +79,7 @@ exports.deleteReview = async (req, res) => {
       return res.status(404).json({ message: "Review not found" });
     }
 
-    // تأكدي إن الـ user هو صاحب الـ review
+    // make sure the user is the owner of the review
     if (review.user !== req.user.userId) {
       return res.status(403).json({ message: "Not authorized" });
     }

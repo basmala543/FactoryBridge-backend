@@ -10,12 +10,12 @@ class DashboardController {
       if (!dashboard) {
         dashboard = await Dashboard.create({});
       }
-      
+
       // Get recent production jobs
       const recentJobs = await ProductionJob.find()
         .sort({ createdAt: -1 })
         .limit(5);
-      
+
       res.status(200).json({
         success: true,
         data: {
@@ -42,7 +42,7 @@ class DashboardController {
       if (!dashboard) {
         dashboard = await Dashboard.create({});
       }
-      
+
       res.status(200).json({
         success: true,
         data: dashboard.capacityOverview
@@ -59,18 +59,18 @@ class DashboardController {
   async getProductionJobs(req, res) {
     try {
       const { status, page = 1, limit = 10 } = req.query;
-      
+
       let query = {};
       if (status) query.status = status;
-      
+
       const jobs = await ProductionJob.find(query)
         .populate('assignedFactory', 'name location')
         .sort({ dueDate: 1 })
         .limit(limit * 1)
         .skip((page - 1) * limit);
-      
+
       const total = await ProductionJob.countDocuments(query);
-      
+
       res.status(200).json({
         success: true,
         data: jobs,
@@ -91,7 +91,7 @@ class DashboardController {
     try {
       const { orderId } = req.params;
       const { completionPercent, status } = req.body;
-      
+
       const job = await ProductionJob.findOne({ orderId });
       if (!job) {
         return res.status(404).json({
@@ -99,27 +99,27 @@ class DashboardController {
           message: `Order ${orderId} not found`
         });
       }
-      
+
       if (completionPercent !== undefined) {
         job.completionPercent = completionPercent;
       }
-      
+
       if (status !== undefined) {
         job.status = status;
       }
-      
+
       // Auto-complete logic
       if (job.completionPercent === 100) {
         job.status = 'Completed';
       }
-      
+
       await job.save();
-      
+
       // Emit socket event for real-time updates if io is available
       if (req.app.get('io')) {
         req.app.get('io').to('factory-admins').emit('job_updated', job);
       }
-      
+
       res.status(200).json({
         success: true,
         data: job,
@@ -137,12 +137,12 @@ class DashboardController {
   async updateDashboardSettings(req, res) {
     try {
       const { revenue, rating, capacityOverview } = req.body;
-      
+
       let dashboard = await Dashboard.findOne();
       if (!dashboard) {
         dashboard = new Dashboard();
       }
-      
+
       if (revenue !== undefined) dashboard.revenue = revenue;
       if (rating !== undefined) dashboard.rating = rating;
       if (capacityOverview) {
@@ -151,10 +151,10 @@ class DashboardController {
           ...capacityOverview
         };
       }
-      
+
       dashboard.updatedAt = Date.now();
       await dashboard.save();
-      
+
       res.status(200).json({
         success: true,
         data: dashboard,
@@ -172,7 +172,7 @@ class DashboardController {
   async getRevenueStats(req, res) {
     try {
       const dashboard = await Dashboard.findOne();
-      
+
       res.status(200).json({
         success: true,
         data: {

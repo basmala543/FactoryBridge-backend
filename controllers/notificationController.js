@@ -5,14 +5,14 @@ exports.getNotifications = async (req, res) => {
     const notifications = await Notification.find({ user: req.user.userId })
       .sort({ createdAt: -1 })
       .limit(20);
-    res.json({ 
+    res.json({
       data: notifications.map(n => {
         const obj = n.toObject();
         if (obj.data?.requestId) {
           obj.data.requestId = obj.data.requestId.toString();
         }
         return { ...obj, id: n._id.toString() };
-      }) 
+      })
     });
   } catch (error) {
     res.status(500).json({ message: "Error fetching notifications", error });
@@ -48,9 +48,9 @@ exports.deleteNotification = async (req, res) => {
 
 exports.getUnreadCount = async (req, res) => {
   try {
-    const count = await Notification.countDocuments({ 
-      user: req.user.userId, 
-      isRead: false 
+    const count = await Notification.countDocuments({
+      user: req.user.userId,
+      isRead: false
     });
     res.json({ count });
   } catch (error) {
@@ -68,9 +68,9 @@ exports.createNotification = async (req, res) => {
       type: type || 'system',
       data,
     });
-    res.status(201).json({ 
-      message: 'Notification created', 
-      data: { ...notification.toObject(), id: notification._id.toString() } 
+    res.status(201).json({
+      message: 'Notification created',
+      data: { ...notification.toObject(), id: notification._id.toString() }
     });
   } catch (error) {
     res.status(500).json({ message: 'Error creating notification', error });

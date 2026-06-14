@@ -6,7 +6,7 @@ const User = require('../models/users');
 const Notification = require('../models/Notification');
 
 
-// ✅ لما Factory توافق على الـ Order - يتجنرت Contract تلقائياً
+// When a factory approves an order, generate a contract automatically
 const createContract = async (orderId) => {
   const order = await Order.findById(orderId);
   if (!order) throw new Error('Order not found');
@@ -21,7 +21,7 @@ const createContract = async (orderId) => {
   return contract;
 };
 
-// ✅ جيب الـ Contract بتاع Order معين
+// Get the contract for a specific order
 const getContractByOrder = async (req, res) => {
   try {
     const contract = await Contract.findOne({ order: req.params.orderId })
@@ -29,21 +29,21 @@ const getContractByOrder = async (req, res) => {
 
     if (!contract) return res.status(404).json({ message: 'Contract not found' });
 
-    // جيب Factory و Brand profiles
-const brandId = contract.brand?.toString();
-const factoryId = contract.factory?.toString();
+    // Fetch factory and brand profiles
+    const brandId = contract.brand?.toString();
+    const factoryId = contract.factory?.toString();
 
-const [brandUser, brandProfile, factoryProfile] = await Promise.all([
-  User.findById(brandId).catch(() => null),
-  BrandProfile.findOne({ userId: brandId }).catch(() => null),
-  FactoryProfile.findOne({ 
-    $or: [{ _id: factoryId }, { userId: factoryId }] 
-  }).catch(() => null),
-]);
+    const [brandUser, brandProfile, factoryProfile] = await Promise.all([
+      User.findById(brandId).catch(() => null),
+      BrandProfile.findOne({ userId: brandId }).catch(() => null),
+      FactoryProfile.findOne({
+        $or: [{ _id: factoryId }, { userId: factoryId }]
+      }).catch(() => null),
+    ]);
 
-const factoryUser = factoryProfile?.userId 
-  ? await User.findById(factoryProfile.userId).catch(() => null)
-  : null;
+    const factoryUser = factoryProfile?.userId
+      ? await User.findById(factoryProfile.userId).catch(() => null)
+      : null;
     res.json({
       ...contract.toObject(),
       factoryInfo: {
@@ -66,7 +66,7 @@ const factoryUser = factoryProfile?.userId
 };
 
 
-// ✅ رفض الـ Contract
+// Reject the contract
 const rejectContract = async (req, res) => {
   try {
     const contract = await Contract.findById(req.params.id);
@@ -82,7 +82,7 @@ const rejectContract = async (req, res) => {
 const approveContract = async (req, res) => {
   try {
     const { role } = req.body;
-    const contract = await Contract.findById(req.params.id).populate('order');  // ← زيد .populate('order')
+    const contract = await Contract.findById(req.params.id).populate('order');
 
     if (!contract) return res.status(404).json({ message: 'Contract not found' });
 
@@ -98,7 +98,7 @@ const approveContract = async (req, res) => {
         message: 'Both parties approved the contract. You can now proceed to payment.',
         type: 'contract',
         data: {
-orderId: contract.order?._id?.toString() ?? contract.order?.toString() ?? '',
+          orderId: contract.order?._id?.toString() ?? contract.order?.toString() ?? '',
           contractId: contract._id.toString(),
         },
       });
@@ -106,12 +106,11 @@ orderId: contract.order?._id?.toString() ?? contract.order?.toString() ?? '',
     } else if (role === 'brand') {
       contract.status = 'brand_approved';
 
-      // ✅ الحل - جيب Factory بـ findOne مش findById
-      const factoryProfile = await FactoryProfile.findOne({ 
-        _id: contract.factory  // ✅ أو
-        // userId: contract.factory  // جربي الاتنين
+      // Use findOne to fetch the factory profile
+      const factoryProfile = await FactoryProfile.findOne({
+        _id: contract.factory
       });
-      
+
       if (factoryProfile) {
         await Notification.create({
           user: factoryProfile.userId,
@@ -119,7 +118,7 @@ orderId: contract.order?._id?.toString() ?? contract.order?.toString() ?? '',
           message: 'The brand approved the contract. Please review and sign.',
           type: 'contract',
           data: {
-orderId: contract.order?._id?.toString() ?? contract.order?.toString() ?? '',            contractId: contract._id.toString(),
+            orderId: contract.order?._id?.toString() ?? contract.order?.toString() ?? '', contractId: contract._id.toString(),
           },
         });
       }
@@ -131,7 +130,7 @@ orderId: contract.order?._id?.toString() ?? contract.order?.toString() ?? '',   
     await contract.save();
     res.json(contract);
   } catch (err) {
-    console.error('approveContract error:', err); // ✅ أضيفي ده
+    console.error('approveContract error:', err);
     res.status(500).json({ message: err.message });
   }
 };

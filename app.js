@@ -6,7 +6,7 @@ const { Server } = require("socket.io");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 require("dotenv").config();
 
-// الموديلات
+// Models
 const Message = require("./models/Message");
 
 const app = express();
@@ -14,14 +14,14 @@ const app = express();
 const cloudinary = require('cloudinary').v2;
 cloudinary.config({
   cloud_name: process.env.CLOUD_NAME,
-  api_key:    process.env.API_KEY,
+  api_key: process.env.API_KEY,
   api_secret: process.env.API_SECRET,
 });
 // Middleware
 app.use(
   cors({
     origin: "*",
-methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
@@ -65,7 +65,7 @@ Guidelines:
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const geminiModel = genAI.getGenerativeModel({
-  model: "gemini-2.5-flash",  // ✅ أحدث وحدود أحسن
+  model: "gemini-2.5-flash",
   systemInstruction: AI_SYSTEM_PROMPT,
   generationConfig: {
     maxOutputTokens: 400,
@@ -74,7 +74,7 @@ const geminiModel = genAI.getGenerativeModel({
 });
 
 async function generateAiReply(userId) {
-  // هات آخر 20 رسالة بين المستخدم و الـ AI
+  // Get the last 20 messages between the user and the AI
   const history = await Message.find({
     $or: [
       { senderId: userId, receiverId: "ai" },
@@ -86,13 +86,13 @@ async function generateAiReply(userId) {
 
   if (history.length === 0) return null;
 
-  // تحويل لصيغة Gemini
+  // Convert history to Gemini format
   let contents = history.map((m) => ({
     role: m.senderId === "ai" ? "model" : "user",
     parts: [{ text: String(m.message || "").slice(0, 2000) }],
   }));
 
-  // Gemini محتاج التاريخ يبدأ بـ user role
+  // Gemini requires the conversation to start with a user role
   while (contents.length > 0 && contents[0].role !== "user") {
     contents.shift();
   }
@@ -124,7 +124,7 @@ io.on("connection", (socket) => {
       const { senderId, receiverId, message } = data;
       const target = receiverId || "ai";
 
-      // 1) حفظ رسالة المستخدم
+      // 1) save user message
       const userMsg = new Message({
         senderId,
         receiverId: target,
@@ -132,14 +132,14 @@ io.on("connection", (socket) => {
       });
       await userMsg.save();
 
-      // 2) echo رسالة المستخدم في غرفته
+      // 2) echo user message to their room
       io.to(senderId).emit("receive_message", {
         senderId,
         receiverId: target,
         message,
       });
 
-      // 3) لو المستلم أدمن بشري، ابعتلوا وخلاص
+      // 3) if recipient is a human admin, send the message directly
       if (target !== "ai") {
         io.to(target).emit("receive_message", {
           senderId,
@@ -150,7 +150,7 @@ io.on("connection", (socket) => {
         return;
       }
 
-      // 4) لو المستلم AI، ولّد الرد من Gemini
+      // 4) if recipient is AI, generate a reply from Gemini
       io.to(senderId).emit("ai_typing", { typing: true });
 
       let reply;
@@ -166,7 +166,7 @@ io.on("connection", (socket) => {
 
       if (!reply) reply = "Sorry, I didn't catch that. Could you rephrase?";
 
-      // 5) حفظ رد الـ AI
+      // 5) save the AI reply
       const aiMsg = new Message({
         senderId: "ai",
         receiverId: senderId,
@@ -174,7 +174,7 @@ io.on("connection", (socket) => {
       });
       await aiMsg.save();
 
-      // 6) إرسال رد الـ AI للمستخدم
+      // 6) send the AI reply to the user
       io.to(senderId).emit("receive_message", {
         senderId: "ai",
         receiverId: senderId,
@@ -210,7 +210,6 @@ mongoose
   .connect(MONGO_URI)
   .then(() => {
     console.log("✅ MongoDB Connected Successfully");
-    // ← أضيفي السطرين دول هنا
     Message.updateMany({ isRead: { $exists: false } }, { $set: { isRead: true } })
       .then(() => console.log('✅ Old messages marked as read'))
       .catch(console.error);

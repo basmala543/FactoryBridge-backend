@@ -8,7 +8,7 @@ const Order = require('../models/Orders');
 
 exports.createRequest = async (req, res) => {
   try {
-    const { factoryId, productName, quantity, notes, productOption } = req.body; // ✅ ضفنا productOption
+    const { factoryId, productName, quantity, notes, productOption } = req.body;
 
     const factoryProfile = await FactoryProfile.findById(factoryId);
     if (!factoryProfile) {
@@ -26,7 +26,7 @@ exports.createRequest = async (req, res) => {
       productName,
       quantity,
       notes,
-      productOption, // ✅ ضفنا productOption
+      productOption,
     });
 
     await Notification.create({
@@ -96,7 +96,7 @@ exports.updateStatus = async (req, res) => {
         const factoryProfile = await FactoryProfile.findOne({ userId: request.factory });
         const factoryProfileId = factoryProfile?._id || request.factory;
 
-        // ✅ حسبنا totalPrice و deposit من productOption
+        // calculate totalPrice and deposit from productOption
         const totalPrice = request.productOption?.totalPrice ?? 0;
         const deposit = totalPrice * 0.3;
 
@@ -108,8 +108,8 @@ exports.updateStatus = async (req, res) => {
           notes: request.notes,
           status: 'accepted',
           isPaidByBrand: false,
-          totalPrice,   // ✅
-          deposit,      // ✅
+          totalPrice,
+          deposit,
         });
 
         console.log('Order created from accepted sample request:', request._id, 'factory:', factoryProfileId);
