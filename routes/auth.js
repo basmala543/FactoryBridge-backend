@@ -28,7 +28,6 @@ const transporter = nodemailer.createTransport({
 
 
 
-
 // ================== SIGNUP ==================
 router.post("/signup", async (req, res) => {
   try {
@@ -42,29 +41,45 @@ router.post("/signup", async (req, res) => {
 
     const existingUser = await User.findOne({ email: Email });
     if (existingUser) {
-      // لو موجود بس لسه ما اتأكدش، نبعتله OTP تاني
       if (!existingUser.isEmailVerified) {
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         existingUser.emailVerificationToken = otp;
         existingUser.emailVerificationExpires = Date.now() + 10 * 60 * 1000;
+
+        // ابعت الأول قبل ما تحفظ
+        try {
+          await transporter.sendMail({
+            from: process.env.GMAIL_USER,
+            to: Email,
+            subject: "Verify your email - FactoryBridge",
+            text: `Your verification code is: ${otp}`,
+          });
+        } catch (mailErr) {
+          return res.status(400).json({ message: "Invalid email address. Please enter a real email." });
+        }
+
         await existingUser.save();
-
-        await transporter.sendMail({
-          from: "factorybridge3@gmail.com",
-          to: Email,
-          subject: "Verify your email - FactoryBridge",
-          text: `Your verification code is: ${otp}`,
-        });
-
         return res.status(200).json({ message: "OTP resent. Please verify your email." });
       }
       return res.status(400).json({ message: "Email already exists" });
     }
 
-
     const hashedPassword = await bcrypt.hash(Password, 10);
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
+    // ابعت الأول قبل ما تحفظ
+    try {
+      await transporter.sendMail({
+        from: process.env.GMAIL_USER,
+        to: Email,
+        subject: "Verify your email - FactoryBridge",
+        text: `Your verification code is: ${otp}`,
+      });
+    } catch (mailErr) {
+      return res.status(400).json({ message: "Invalid email address. Please enter a real email." });
+    }
+
+    // لو الإرسال نجح → احفظ
     const newUser = new User({
       name: UserName,
       email: Email,
@@ -76,14 +91,6 @@ router.post("/signup", async (req, res) => {
     });
 
     await newUser.save();
-
-    await transporter.sendMail({
-      from: "factorybridge3@gmail.com",
-      to: Email,
-      subject: "Verify your email - FactoryBridge",
-      text: `Your verification code is: ${otp}`,
-    });
-
     res.status(200).json({ message: "OTP sent. Please verify your email." });
 
   } catch (err) {
