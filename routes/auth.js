@@ -34,39 +34,63 @@ router.post("/signup", async (req, res) => {
   try {
     const { UserName, Email, Password, ConfirmPassword, Role } = req.body;
 
-    if (Password !== ConfirmPassword) {
+    if (Password !== ConfirmPassword)
       return res.status(400).json({ message: "Passwords do not match" });
-    }
 
-    if (!["factory", "brand"].includes(Role)) {
+    if (!["factory", "brand"].includes(Role))
       return res.status(400).json({ message: "Invalid role" });
-    }
 
     const existingUser = await User.findOne({ email: Email });
-
     if (existingUser) {
+      // لو موجود بس لسه ما اتأكدش، نبعتله OTP تاني
+      if (!existingUser.isEmailVerified) {
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        existingUser.emailVerificationToken = otp;
+        existingUser.emailVerificationExpires = Date.now() + 10 * 60 * 1000;
+        await existingUser.save();
+
+        await transporter.sendMail({
+          from: "factorybridge7@gmail.com",
+          to: Email,
+          subject: "Verify your email - FactoryBridge",
+          text: `Your verification code is: ${otp}`,
+        });
+
+        return res.status(200).json({ message: "OTP resent. Please verify your email." });
+      }
       return res.status(400).json({ message: "Email already exists" });
     }
 
     const hashedPassword = await bcrypt.hash(Password, 10);
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
     const newUser = new User({
       name: UserName,
       email: Email,
       password: hashedPassword,
       role: Role,
+      isEmailVerified: false,
+      emailVerificationToken: otp,
+      emailVerificationExpires: Date.now() + 10 * 60 * 1000,
     });
 
     await newUser.save();
 
-    res.json({ message: "User created successfully" });
+    await transporter.sendMail({
+      from: "factorybridge7@gmail.com",
+      to: Email,
+      subject: "Verify your email - FactoryBridge",
+      text: `Your verification code is: ${otp}`,
+    });
+
+    res.status(200).json({ message: "OTP sent. Please verify your email." });
 
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
-// ================== LOGIN (نسخة محدّثة بتحفظ الـ session) ==================
-// استبدلي الـ login route الموجود في auth.js بالكود ده
+
+//login//
 
 router.post("/login", async (req, res) => {
   try {
@@ -78,6 +102,11 @@ router.post("/login", async (req, res) => {
     const isMatch = await bcrypt.compare(Password, user.password);
     if (!isMatch) return res.status(400).json({ message: "Wrong password" });
 
+    if (!user.isEmailVerified) {
+  return res.status(403).json({ message: "Please verify your email before logging in" });
+}
+
+
     // ================== SUSPENSION CHECK ==================
     if (user.isSuspended) {
       return res.status(403).json({ 
@@ -86,7 +115,7 @@ router.post("/login", async (req, res) => {
     }
     // ======================================================
 
-    // ── حفظ الـ login session ──
+    //   login session //
     const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress || "";
     const userAgent = req.headers["user-agent"] || "";
 
@@ -153,6 +182,40 @@ router.post("/forgot-password", async (req, res) => {
     });
   }
 });
+// ================== VERIFY EMAIL OTP ==================
+router.post("/verify-email", async (req, res) => {
+  try {
+    const { Email, OTP } = req.body;
+
+    const user = await User.findOne({ email: Email });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (user.isEmailVerified)
+      return res.status(400).json({ message: "Email already verified" });
+
+    if (user.emailVerificationToken !== OTP.toString())
+      return res.status(400).json({ message: "Invalid OTP" });
+
+    if (user.emailVerificationExpires < Date.now())
+      return res.status(400).json({ message: "OTP expired" });
+
+    user.isEmailVerified = true;
+    user.emailVerificationToken = null;
+    user.emailVerificationExpires = null;
+    await user.save();
+
+    res.json({ message: "Email verified successfully" });
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+
+
+
+
+
 // ================== VERIFY OTP + RESET PASSWORD ==================
 router.post("/reset-password", async (req, res) => {
   try {
@@ -220,6 +283,7 @@ router.put("/change-password", authMiddleware, async (req, res) => {
     const isMatch = await bcrypt.compare(oldPassword, user.password);
 
     if (!isMatch) {
+
       return res.status(400).json({ message: "Old password is incorrect" });
     }
 
